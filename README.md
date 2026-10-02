@@ -41,13 +41,9 @@ node --check .\app.mjs
 node --check .\game-engine.mjs
 ```
 
-## Publish with GitHub Pages
+## Deployment
 
-1. Push this project to a public GitHub repository named `agentic-minesweeper`.
-2. Open **Settings → Pages**.
-3. Choose **Deploy from a branch**, select the default branch and `/ (root)`, then save.
-4. Wait for deployment, open the Pages URL, and verify the game works.
-5. Replace the placeholder links above with your verified profile and live-site URLs.
+Published with GitHub Pages from the `main` branch root. Updates to `main` deploy automatically.
 
 ## About
 

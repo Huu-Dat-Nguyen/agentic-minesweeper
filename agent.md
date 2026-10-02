@@ -2,7 +2,7 @@
 
 ## Project
 
-Minefield is a no-dependency Minesweeper website built with HTML, CSS, and JavaScript. It runs locally and is designed for GitHub Pages; it is not yet published.
+Minefield is a no-dependency Minesweeper website built with HTML, CSS, and JavaScript. It is published at https://huu-dat-nguyen.github.io/agentic-minesweeper/ from the public Huu-Dat-Nguyen/agentic-minesweeper repository.
 
 Implemented: Beginner (9 × 9, 10 mines), Intermediate (16 × 16, 40 mines), Expert (16 × 30, 99 mines), safe first reveal, clues, flood reveal, flags, timer, counter, restart, win/loss, touch controls, right-click flagging/chording, keyboard navigation, and a dark viewport-filling layout. Covered and revealed cells have distinct surfaces.
 
@@ -31,7 +31,7 @@ For UI changes, verify gameplay, outcomes, keyboard/touch controls, and desktop/
 
 - The 11 game-engine tests and JavaScript syntax checks pass.
 - `before-fixes.png` and `before-fullscreen-dark-theme.png` are historical screenshots; do not overwrite them.
-- Git is initialized on `main`; Git and GitHub CLI are installed. The showcase preview is `minefield-preview.png`.
+- Local `main` tracks `origin/main`; Git is installed. The showcase preview is `minefield-preview.png`.
 - `/log` and historical screenshots are excluded from Git.
-- Next: authenticate GitHub CLI, create and push the public `agentic-minesweeper` repository, enable Pages, verify the live URL, and update README links.
-- Do not claim publication until the repository and deployed site are verified.
+- GitHub Pages is enabled from `main` / repository root; the public site has been loaded and gameplay/difficulty changes verified in-browser.
+- Future work: run a clean-clone smoke test and keep docs, tests, and the published site in sync.
