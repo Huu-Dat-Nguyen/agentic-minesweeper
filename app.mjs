@@ -2,8 +2,11 @@ import {
   chordCell,
   createGame,
   DIFFICULTIES,
+  MAX_COLUMNS,
+  MAX_ROWS,
   revealCell,
   toggleFlag,
+  undo,
 } from "./game-engine.mjs";
 
 const boardElement = document.querySelector("#board");
@@ -13,20 +16,88 @@ const timerElement = document.querySelector("#timer-display");
 const messageElement = document.querySelector("#game-message");
 const boardSizeElement = document.querySelector("#board-size");
 const restartButton = document.querySelector("#restart-button");
+const undoButton = document.querySelector("#undo-button");
+const customSizeElement = document.querySelector("#custom-size");
+const customRowsElement = document.querySelector("#custom-rows");
+const customColumnsElement = document.querySelector("#custom-columns");
+const customMinesElement = document.querySelector("#custom-mines");
+const applyCustomButton = document.querySelector("#apply-custom");
+const bestTimeElement = document.querySelector("#best-time");
 const difficultyButtons = [...document.querySelectorAll("[data-difficulty]")];
 const modeButtons = [...document.querySelectorAll("[data-mode]")];
 
+const BEST_TIME_KEY = "minefield.bestTimes.v1";
 let difficulty = "beginner";
 let game = createGame(DIFFICULTIES[difficulty]);
+let history = [];
 let mode = "reveal";
 let activeIndex = 0;
 let timerStartedAt = null;
 let finalElapsedSeconds = 0;
 let timerInterval = null;
+let bestTimes = loadBestTimes();
+
+function loadBestTimes() {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(BEST_TIME_KEY));
+    if (stored && typeof stored === "object") return stored;
+  } catch {
+    // Ignore unreadable stored values; the game works without them.
+  }
+  return {};
+}
+
+function formatBestTime(difficultyKey) {
+  const stored = bestTimes[difficultyKey];
+  return typeof stored === "number" ? formatTime(stored) : "--";
+}
+
+function updateBestTimeDisplay() {
+  bestTimeElement.textContent = formatBestTime(difficulty);
+}
+
+function recordBestTime(seconds) {
+  const stored = bestTimes[difficulty];
+  if (typeof stored === "number" && stored <= seconds) return false;
+  bestTimes = { ...bestTimes, [difficulty]: seconds };
+  try {
+    window.localStorage.setItem(BEST_TIME_KEY, JSON.stringify(bestTimes));
+  } catch {
+    // Storage may be unavailable (private mode); the game still works.
+  }
+  return true;
+}
+
+function createCustomGame({ rows, columns, mines }) {
+  return createGame({
+    rows: Math.min(Math.max(1, rows), MAX_ROWS),
+    columns: Math.min(Math.max(1, columns), MAX_COLUMNS),
+    mines: Math.min(Math.max(1, mines), rows * columns - 1),
+  });
+}
 
 function startNewGame(nextDifficulty = difficulty) {
   difficulty = nextDifficulty;
-  game = createGame(DIFFICULTIES[difficulty]);
+  if (difficulty === "custom") {
+    const rows = Number(customRowsElement.value);
+    const columns = Number(customColumnsElement.value);
+    const mines = Number(customMinesElement.value);
+    if (
+      !Number.isInteger(rows) || !Number.isInteger(columns) || !Number.isInteger(mines)
+      || rows < 1 || rows > MAX_ROWS
+      || columns < 1 || columns > MAX_COLUMNS
+      || mines < 1 || mines >= rows * columns
+    ) {
+      messageElement.textContent = `Custom board needs 1–${MAX_ROWS} rows, 1–${MAX_COLUMNS} columns, and 1 to rows×columns−1 mines.`;
+      difficulty = "beginner";
+    } else {
+      game = createCustomGame({ rows, columns, mines });
+    }
+  }
+  if (difficulty !== "custom") {
+    game = createGame(DIFFICULTIES[difficulty]);
+  }
+  history = [game];
   activeIndex = 0;
   timerStartedAt = null;
   finalElapsedSeconds = 0;
@@ -38,14 +109,34 @@ function startNewGame(nextDifficulty = difficulty) {
     button.classList.toggle("is-selected", selected);
     button.setAttribute("aria-pressed", String(selected));
   }
+  customSizeElement.hidden = difficulty !== "custom";
 
-  const { rows, columns, mines } = DIFFICULTIES[difficulty];
+  const { rows, columns, mines } = difficulty === "custom"
+    ? { rows: game.rows, columns: game.columns, mines: game.mineCount }
+    : DIFFICULTIES[difficulty];
   boardSizeElement.textContent = `${rows} × ${columns} · ${mines} mines`;
   timerElement.textContent = "000";
+  updateBestTimeDisplay();
   messageElement.textContent = "Choose a square. The first one is on us.";
   restartButton.textContent = "☺";
   restartButton.setAttribute("aria-label", "Start a new game");
   renderBoard();
+}
+
+function applyCustomBoard() {
+  const rows = Number(customRowsElement.value);
+  const columns = Number(customColumnsElement.value);
+  const mines = Number(customMinesElement.value);
+  if (
+    !Number.isInteger(rows) || !Number.isInteger(columns) || !Number.isInteger(mines)
+    || rows < 1 || rows > MAX_ROWS
+    || columns < 1 || columns > MAX_COLUMNS
+    || mines < 1 || mines >= rows * columns
+  ) {
+    messageElement.textContent = `Custom board needs 1–${MAX_ROWS} rows, 1–${MAX_COLUMNS} columns, and 1 to rows×columns−1 mines.`;
+    return;
+  }
+  startNewGame("custom");
 }
 
 function setMode(nextMode) {
@@ -133,11 +224,8 @@ function getCellLabel(cell, row, column) {
 
 function updateMineCounter() {
   const flags = game.board.reduce((count, cell) => count + Number(cell.flagged), 0);
-  const remaining = game.mineCount - flags;
-  const formatted = remaining < 0
-    ? `-${String(Math.abs(remaining)).padStart(2, "0")}`
-    : String(remaining).padStart(3, "0");
-  mineCountElement.textContent = formatted;
+  const remaining = Math.max(0, game.mineCount - flags);
+  mineCountElement.textContent = String(remaining).padStart(3, "0");
   mineCountElement.setAttribute("aria-label", `${remaining} mines remaining`);
 }
 
@@ -163,7 +251,7 @@ function getAdjacentFlagCount(row, column) {
 }
 
 function formatTime(seconds) {
-  return String(Math.min(seconds, 999)).padStart(3, "0");
+  return String(Math.min(seconds, 9999)).padStart(4, "0");
 }
 
 function updateTimer() {
@@ -173,7 +261,7 @@ function updateTimer() {
   timerElement.textContent = formatTime(elapsed);
 }
 
-function updateAfterAction(previousPhase, actionDescription) {
+function updateAfterAction(previousPhase, actionDescription, recordHistory = true) {
   if (previousPhase === "ready" && game.phase !== "ready" && game.phase !== "lost") {
     timerStartedAt = Date.now();
     timerInterval = window.setInterval(updateTimer, 250);
@@ -195,12 +283,42 @@ function updateAfterAction(previousPhase, actionDescription) {
   }
 
   if (game.phase === "won") {
-    messageElement.textContent = `Beautifully done. You cleared the field in ${formatTime(finalElapsedSeconds)} seconds.`;
+    const newBest = recordBestTime(finalElapsedSeconds);
+    messageElement.textContent = newBest
+      ? `Beautifully done. You cleared the field in ${formatTime(finalElapsedSeconds)} seconds — a new best time.`
+      : `Beautifully done. You cleared the field in ${formatTime(finalElapsedSeconds)} seconds.`;
   } else if (game.phase === "lost") {
     messageElement.textContent = "A mine was hiding there. Take a breath and try again.";
   } else {
     messageElement.textContent = actionDescription;
   }
+
+  if (recordHistory && game !== undefined && history[history.length - 1] !== game) {
+    history.push(game);
+  }
+}
+
+function undoLastMove() {
+  if (history.length === 0) {
+    messageElement.textContent = "Nothing to undo yet.";
+    return;
+  }
+  game = undo(game, history);
+  if (game.phase === "playing" && timerStartedAt === null && timerInterval === null) {
+    timerStartedAt = Date.now();
+    timerInterval = window.setInterval(updateTimer, 250);
+  }
+  if (game.phase === "ready") {
+    timerStartedAt = null;
+    finalElapsedSeconds = 0;
+    window.clearInterval(timerInterval);
+    timerInterval = null;
+    timerElement.textContent = "0000";
+  }
+  restartButton.textContent = "☺";
+  restartButton.setAttribute("aria-label", "Start a new game");
+  messageElement.textContent = "Undone. The board is back one move.";
+  renderBoard(true);
 }
 
 function activateCell(button, requestedMode = mode) {
@@ -314,6 +432,34 @@ boardElement.addEventListener("keydown", (event) => {
         ? game.board.length - 1
         : row * game.columns + game.columns - 1;
       break;
+    case "c":
+    case "C": {
+      const cell = game.board[index];
+      if (!cell.revealed || cell.adjacent === 0) return;
+      if (game.phase === "won" || game.phase === "lost") return;
+      event.preventDefault();
+      const previousPhase = game.phase;
+      const previousGame = game;
+      game = chordCell(game, row, column);
+      const flagCount = getAdjacentFlagCount(row, column);
+      let message = "Neighbors cleared.";
+      if (game === previousGame) {
+        if (flagCount < cell.adjacent) {
+          message = `Place exactly ${cell.adjacent} flag${cell.adjacent === 1 ? "" : "s"} around this number to clear its neighbors.`;
+        } else if (flagCount > cell.adjacent) {
+          message = `Remove flags until exactly ${cell.adjacent} remain around this number.`;
+        } else {
+          message = "There are no covered neighbors left to clear.";
+        }
+      } else if (game.phase === "lost") {
+        message = "A mine was among the squares cleared. Take a breath and try again.";
+      } else if (game.phase === "won") {
+        message = "Beautifully done. You cleared the field.";
+      }
+      updateAfterAction(previousPhase, message);
+      renderBoard(true);
+      return;
+    }
     default:
       return;
   }
@@ -332,6 +478,13 @@ for (const button of modeButtons) {
 }
 
 restartButton.addEventListener("click", () => startNewGame());
+undoButton.addEventListener("click", undoLastMove);
+applyCustomButton.addEventListener("click", applyCustomBoard);
+for (const input of [customRowsElement, customColumnsElement, customMinesElement]) {
+  input.addEventListener("change", () => {
+    if (difficulty === "custom") applyCustomBoard();
+  });
+}
 boardScroll.addEventListener("focus", () => {
   if (document.activeElement === boardScroll) {
     boardElement.querySelector(`[data-index="${activeIndex}"]`)?.focus();

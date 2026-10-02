@@ -24,14 +24,17 @@ Minefield is both a playable web game and a record of prompt-driven development.
 | Improve desktop play and number chording | Expanded the desktop board layout and added right-click clearing when adjacent flags match a clue. |
 | Fill the screen, distinguish blank cells, and use a dark theme | Created the responsive dark interface with clearly raised covered tiles and recessed revealed tiles. |
 | Prepare a public GitHub project | Published the source and enabled GitHub Pages for the live game. |
+| Rewrite the README around agentic coding | Recast the project as a prompt-to-product record with a concise prompt/result log and evolution screenshots. |
+| Execute the full improvement plan | Added custom boards (up to 24 × 40), undo, keyboard chording (C), best times per difficulty, a clamped mine counter, a four-digit timer, and a 16-test suite; pushed to the public repository. |
 
 The images compare an early playable build with the current release. Historical full-size backups stay local; the README uses a cropped copy of the early screenshot.
 
 ## Game features
 
-- Beginner (9 × 9), Intermediate (16 × 16), and Expert (16 × 30).
+- Beginner (9 × 9), Intermediate (16 × 16), Expert (16 × 30), and Custom boards (up to 24 × 40).
 - Safe first reveal, automatic empty-area reveal, flags, timer, mine counter, restart, and win/loss feedback.
-- Right-click to flag a covered square or clear neighbors of a revealed number when adjacent flags match.
+- Right-click to flag a covered square or clear neighbors of a revealed number when adjacent flags match; press C on a revealed number to do the same from the keyboard.
+- Undo any move; best times are remembered per difficulty in the browser.
 - Touch-friendly reveal/flag controls, keyboard navigation, and accessible announcements.
 - Responsive dark layout; large boards scroll within the game area.
 - No framework, dependencies, backend, or build step.
@@ -46,7 +49,7 @@ py -m http.server 8000
 
 Then visit <http://localhost:8000>.
 
-Choose **Reveal** or **Flag**, then select a square. On desktop, right-click to flag or chord a revealed number. With the board focused, use the arrow keys to move and Enter or Space to activate a square.
+Choose **Reveal** or **Flag**, then select a square. On desktop, right-click to flag or chord a revealed number, or press **C** on a revealed number to clear its neighbors. With the board focused, use the arrow keys to move, Enter or Space to activate a square, and C to chord. **Undo** (↩) takes back the last move; best times persist per difficulty.
 
 Run the tests with Node.js 18 or later; no packages are needed:
 

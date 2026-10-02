@@ -37,9 +37,25 @@
                 <button class="difficulty-button is-selected" type="button" data-difficulty="beginner" aria-pressed="true">Beginner</button>
                 <button class="difficulty-button" type="button" data-difficulty="intermediate" aria-pressed="false">Intermediate</button>
                 <button class="difficulty-button" type="button" data-difficulty="expert" aria-pressed="false">Expert</button>
+                <button class="difficulty-button" type="button" data-difficulty="custom" aria-pressed="false">Custom</button>
               </div>
             </div>
             <p class="board-size" id="board-size">9 × 9 <span>·</span> 10 mines</p>
+          </div>
+          <div class="custom-size" id="custom-size" hidden>
+            <label class="custom-field">
+              <span class="custom-label">ROWS</span>
+              <input class="custom-input" id="custom-rows" type="number" min="1" max="24" value="10" inputmode="numeric">
+            </label>
+            <label class="custom-field">
+              <span class="custom-label">COLUMNS</span>
+              <input class="custom-input" id="custom-columns" type="number" min="1" max="40" value="12" inputmode="numeric">
+            </label>
+            <label class="custom-field">
+              <span class="custom-label">MINES</span>
+              <input class="custom-input" id="custom-mines" type="number" min="1" max="479" value="20" inputmode="numeric">
+            </label>
+            <button class="custom-apply" id="apply-custom" type="button">Apply</button>
           </div>
 
           <div class="game-console">
@@ -48,9 +64,14 @@
               <output class="digital-display" id="mine-count" aria-label="Mines remaining">010</output>
             </div>
             <button class="face-button" id="restart-button" type="button" aria-label="Start a new game">☺</button>
+            <button class="undo-button" id="undo-button" type="button" aria-label="Undo last move">↩</button>
             <div class="counter-block counter-block-right">
               <span class="counter-label">TIME</span>
-              <output class="digital-display" id="timer-display" aria-label="Elapsed time in seconds">000</output>
+              <output class="digital-display" id="timer-display" aria-label="Elapsed time in seconds">0000</output>
+            </div>
+            <div class="counter-block counter-block-best">
+              <span class="counter-label">BEST</span>
+              <output class="digital-display best-display" id="best-time" aria-label="Best time for this difficulty">--</output>
             </div>
           </div>
 
@@ -63,7 +84,7 @@
                 <span class="mode-icon flag-icon" aria-hidden="true">⚑</span> Flag
               </button>
             </div>
-            <p class="play-hint" id="board-instructions">Choose a square to start. First reveal is safe · right-click a number to clear.</p>
+            <p class="play-hint" id="board-instructions">Choose a square to start. First reveal is safe · right-click a number or press C to clear · Undo takes back a move.</p>
           </div>
 
           <div class="board-frame">

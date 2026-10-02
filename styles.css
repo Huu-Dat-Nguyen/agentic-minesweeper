@@ -343,6 +343,99 @@ h1 span {
   transform: translateY(1px);
 }
 
+.undo-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #45564a;
+  border-radius: 11px;
+  background: #25382c;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.undo-button:hover {
+  transform: translateY(-1px);
+  background: #304736;
+}
+
+.undo-button:active {
+  transform: translateY(1px);
+}
+
+.counter-block-best {
+  text-align: right;
+}
+
+.best-display {
+  min-width: 44px;
+  color: var(--green-dark);
+}
+
+.custom-size {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 0 2px;
+}
+
+.custom-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.custom-input {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid #3a4941;
+  border-radius: 8px;
+  background: #0b100e;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+}
+
+.custom-input:focus-visible {
+  outline: 2px solid #e7b96d;
+  outline-offset: 1px;
+}
+
+.custom-apply {
+  padding: 5px 14px;
+  border: 1px solid #4c765e;
+  border-radius: 8px;
+  background: #244333;
+  color: var(--green-dark);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 150ms ease, transform 100ms ease;
+}
+
+.custom-apply:hover {
+  background: #2c4f3b;
+}
+
+.custom-apply:active {
+  transform: translateY(1px);
+}
+
 .play-controls {
   min-height: 42px;
   display: flex;
@@ -658,6 +751,21 @@ h1 span {
     height: 34px;
     border-radius: 9px;
     font-size: 19px;
+  }
+
+  .undo-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    font-size: 16px;
+  }
+
+  .best-display {
+    min-width: 40px;
+  }
+
+  .custom-input {
+    width: 54px;
   }
 
   .play-controls {

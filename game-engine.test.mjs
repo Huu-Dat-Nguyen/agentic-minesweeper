@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chordCell, createGame, revealCell, toggleFlag } from "./game-engine.mjs";
+import { chordCell, createGame, MAX_COLUMNS, MAX_ROWS, revealCell, toggleFlag, undo } from "./game-engine.mjs";
 
 function seededRandom(seed = 42) {
   let state = seed;
@@ -232,4 +232,117 @@ test("chording with the wrong matching flags reveals the mine and loses", () => 
   const result = chordCell(game, Math.floor(targetIndex / game.columns), targetIndex % game.columns);
   assert.equal(result.phase, "lost");
   assert.ok(result.board.some((cell) => cell.mine && cell.revealed));
+});
+
+test("accepts custom board sizes within limits and rejects out-of-range dimensions", () => {
+  const game = createGame({ rows: 12, columns: 20, mines: 30 });
+  assert.equal(game.board.length, 240);
+  assert.equal(game.phase, "ready");
+
+  assert.throws(() => createGame({ rows: MAX_ROWS + 1, columns: 9, mines: 1 }), RangeError);
+  assert.throws(() => createGame({ rows: 9, columns: MAX_COLUMNS + 1, mines: 1 }), RangeError);
+  assert.throws(() => createGame({ rows: -1, columns: 9, mines: 1 }), RangeError);
+});
+
+test("restores the exact previous state on undo and ignores an empty history", () => {
+  let game = createGame({ rows: 3, columns: 3, mines: 1 });
+  assert.equal(undo(game, []), game);
+
+  const history = [];
+  history.push(game);
+  game = toggleFlag(game, 0, 0);
+  history.push(game);
+  game = revealCell(game, 2, 2, () => 0);
+
+  const beforeUndo = game;
+  game = undo(game, history);
+  assert.notEqual(game, beforeUndo);
+  assert.equal(game.board[0].flagged, true);
+  assert.equal(game.board[8].revealed, false);
+  assert.equal(game.initialized, false);
+
+  game = undo(game, history);
+  assert.equal(game.board[0].flagged, false);
+
+  game = undo(game, history);
+  assert.equal(game.board.length, 9);
+  assert.equal(game.board[0].flagged, false);
+});
+
+test("undo restores a finished game so play can continue", () => {
+  let game = createGame({ rows: 2, columns: 2, mines: 1 });
+  const history = [];
+  history.push(game);
+  game = revealCell(game, 0, 0, () => 0);
+  history.push(game);
+  game = revealCell(game, 0, 1);
+  const mineIndex = game.board.findIndex((cell) => cell.mine);
+  history.push(game);
+  game = revealCell(game, Math.floor(mineIndex / game.columns), mineIndex % game.columns);
+  assert.equal(game.phase, "lost");
+
+  const restored = undo(game, history);
+  assert.notEqual(restored.phase, "lost");
+  assert.equal(restored.phase, "playing");
+});
+
+test("chording a flood chain clears every connected safe neighbor", () => {
+  const { game: initialGame, targetIndex } = createChordScenario();
+  const neighbors = getNeighborIndices(initialGame, targetIndex);
+  const target = initialGame.board[targetIndex];
+
+  let game = initialGame;
+  for (const index of neighbors) {
+    if (!initialGame.board[index].mine) continue;
+    game = toggleFlag(game, Math.floor(index / game.columns), index % game.columns);
+  }
+
+  const result = chordCell(game, Math.floor(targetIndex / game.columns), targetIndex % game.columns);
+  const coveredBefore = neighbors.filter((index) => (
+    !initialGame.board[index].mine
+    && !initialGame.board[index].flagged
+    && !initialGame.board[index].revealed
+  ));
+  for (const index of coveredBefore) {
+    assert.equal(result.board[index].revealed, true);
+  }
+  assert.notEqual(result.phase, "lost");
+});
+
+test("wins immediately when the final safe cell is revealed by a chord", () => {
+  let game = createGame({ rows: 3, columns: 3, mines: 2 });
+  const first = revealCell(game, 0, 0, () => 0);
+  const safeIndices = first.board
+    .map((cell, index) => (cell.mine ? -1 : index))
+    .filter((index) => index >= 0);
+  assert.equal(safeIndices.length, 7);
+
+  const lastSafeIndex = safeIndices[safeIndices.length - 1];
+  game = first;
+  for (const index of safeIndices) {
+    if (index === 0 || index === lastSafeIndex) continue;
+    game = revealCell(game, Math.floor(index / game.columns), index % game.columns);
+  }
+  assert.equal(game.phase, "playing");
+  assert.equal(
+    game.board.filter((cell) => cell.revealed && !cell.mine).length,
+    safeIndices.length - 1,
+  );
+
+  const neighbors = getNeighborIndices(game, lastSafeIndex);
+  const clueIndex = neighbors.find((index) => (
+    game.board[index].revealed && game.board[index].adjacent > 0
+  ));
+  assert.notEqual(clueIndex, undefined, "last safe cell must border a revealed clue");
+
+  for (const index of getNeighborIndices(game, clueIndex)) {
+    if (!game.board[index].mine) continue;
+    game = toggleFlag(game, Math.floor(index / game.columns), index % game.columns);
+  }
+
+  const clueRow = Math.floor(clueIndex / game.columns);
+  const clueColumn = clueIndex % game.columns;
+  const result = chordCell(game, clueRow, clueColumn);
+  assert.equal(result.board[lastSafeIndex].revealed, true);
+  assert.equal(result.phase, "won");
 });

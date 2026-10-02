@@ -10,12 +10,15 @@ const NEIGHBOR_OFFSETS = Object.freeze([
   [1, -1],  [1, 0],   [1, 1],
 ]);
 
+export const MAX_ROWS = 24;
+export const MAX_COLUMNS = 40;
+
 export function createGame({ rows, columns, mines }) {
-  if (!Number.isInteger(rows) || rows < 1) {
-    throw new RangeError("Rows must be a positive integer.");
+  if (!Number.isInteger(rows) || rows < 1 || rows > MAX_ROWS) {
+    throw new RangeError(`Rows must be an integer from 1 to ${MAX_ROWS}.`);
   }
-  if (!Number.isInteger(columns) || columns < 1) {
-    throw new RangeError("Columns must be a positive integer.");
+  if (!Number.isInteger(columns) || columns < 1 || columns > MAX_COLUMNS) {
+    throw new RangeError(`Columns must be an integer from 1 to ${MAX_COLUMNS}.`);
   }
   if (!Number.isInteger(mines) || mines < 1 || mines >= rows * columns) {
     throw new RangeError("Mine count must be positive and leave at least one safe cell.");
@@ -34,6 +37,11 @@ export function createGame({ rows, columns, mines }) {
     initialized: false,
     phase: "ready",
   };
+}
+
+export function undo(game, history) {
+  if (!Array.isArray(history) || history.length === 0) return game;
+  return history.pop();
 }
 
 export function toggleFlag(game, row, column) {
