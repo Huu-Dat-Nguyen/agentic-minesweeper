@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0c1110">
+    <meta
+      name="description"
+      content="A fresh, friendly take on classic Minesweeper. Pick a difficulty and clear the board without hitting a mine."
+    >
+    <title>Minesweeper — One more square?</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="app.mjs"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="./" aria-label="Minesweeper home">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span class="brand-name">minefield<span class="brand-period">.</span></span>
+        </a>
+        <span class="header-note"><span class="live-dot" aria-hidden="true"></span> Classic logic · three levels</span>
+      </header>
+
+      <main class="game-main">
+        <section class="intro" aria-labelledby="page-title">
+          <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> THE ORIGINAL LOGIC GAME</p>
+          <h1 id="page-title">One more <span>square?</span></h1>
+          <p class="intro-copy">Read the clues. Find a safe path.</p>
+        </section>
+
+        <section class="game-card" aria-label="Minesweeper game">
+          <div class="game-toolbar">
+            <div class="difficulty-wrap">
+              <span class="control-label" id="difficulty-label">DIFFICULTY</span>
+              <div class="difficulty-switch" role="group" aria-labelledby="difficulty-label">
+                <button class="difficulty-button is-selected" type="button" data-difficulty="beginner" aria-pressed="true">Beginner</button>
+                <button class="difficulty-button" type="button" data-difficulty="intermediate" aria-pressed="false">Intermediate</button>
+                <button class="difficulty-button" type="button" data-difficulty="expert" aria-pressed="false">Expert</button>
+              </div>
+            </div>
+            <p class="board-size" id="board-size">9 × 9 <span>·</span> 10 mines</p>
+          </div>
+
+          <div class="game-console">
+            <div class="counter-block">
+              <span class="counter-label">MINES LEFT</span>
+              <output class="digital-display" id="mine-count" aria-label="Mines remaining">010</output>
+            </div>
+            <button class="face-button" id="restart-button" type="button" aria-label="Start a new game">☺</button>
+            <div class="counter-block counter-block-right">
+              <span class="counter-label">TIME</span>
+              <output class="digital-display" id="timer-display" aria-label="Elapsed time in seconds">000</output>
+            </div>
+          </div>
+
+          <div class="play-controls">
+            <div class="mode-switch" role="group" aria-label="Cell action">
+              <button class="mode-button is-selected" type="button" data-mode="reveal" aria-pressed="true">
+                <span class="mode-icon reveal-icon" aria-hidden="true"></span> Reveal
+              </button>
+              <button class="mode-button" type="button" data-mode="flag" aria-pressed="false">
+                <span class="mode-icon flag-icon" aria-hidden="true">⚑</span> Flag
+              </button>
+            </div>
+            <p class="play-hint" id="board-instructions">Choose a square to start. First reveal is safe · right-click a number to clear.</p>
+          </div>
+
+          <div class="board-frame">
+            <div class="board-scroll" id="board-scroll" tabindex="0" aria-label="Scrollable game board">
+              <div class="board" id="board" role="grid" aria-label="Minesweeper board" aria-describedby="board-instructions"></div>
+            </div>
+          </div>
+
+          <div class="game-footer">
+            <p class="game-message" id="game-message" role="status" aria-live="polite" aria-atomic="true">Choose a square. The first one is on us.</p>
+            <p class="board-legend"><span class="legend-dot" aria-hidden="true"></span> Numbers show nearby mines</p>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </body>
+</html>
