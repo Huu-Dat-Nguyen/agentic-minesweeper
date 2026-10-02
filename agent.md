@@ -30,8 +30,8 @@ For UI changes, verify gameplay, outcomes, keyboard/touch controls, and desktop/
 ## Status and next steps
 
 - The 11 game-engine tests and JavaScript syntax checks pass.
-- `before-fixes.png` and `before-fullscreen-dark-theme.png` are historical screenshots; do not overwrite them.
+- `before-fixes.png` and `before-fullscreen-dark-theme.png` are private historical backups; do not overwrite or publish them. Cropped copies referenced by the README live in `docs/images/`.
 - Local `main` tracks `origin/main`; Git is installed. The showcase preview is `minefield-preview.png`.
-- `/log` and historical screenshots are excluded from Git.
+- `/log` and original historical screenshots are excluded from Git. Only curated README image assets are public.
 - GitHub Pages is enabled from `main` / repository root; the public site has been loaded and gameplay/difficulty changes verified in-browser.
 - Future work: run a clean-clone smoke test and keep docs, tests, and the published site in sync.
