@@ -9,6 +9,9 @@
       content="A fresh, friendly take on classic Minesweeper. Pick a difficulty and clear the board without hitting a mine."
     >
     <title>Minesweeper — One more square?</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="stylesheet" href="styles.css">
     <script type="module" src="app.mjs"></script>
   </head>
@@ -19,7 +22,7 @@
           <span class="brand-mark" aria-hidden="true"><span></span></span>
           <span class="brand-name">minefield<span class="brand-period">.</span></span>
         </a>
-        <span class="header-note"><span class="live-dot" aria-hidden="true"></span> Classic logic · three levels</span>
+        <a class="header-note" href="build.html"><span class="live-dot" aria-hidden="true"></span> How it was built →</a>
       </header>
 
       <main class="game-main">
@@ -84,7 +87,46 @@
                 <span class="mode-icon flag-icon" aria-hidden="true">⚑</span> Flag
               </button>
             </div>
-            <p class="play-hint" id="board-instructions">Choose a square to start. First reveal is safe · right-click a number or press C to clear · Undo takes back a move.</p>
+            <div class="tool-bar" role="group" aria-label="Game tools">
+              <button class="tool-button" id="no-guess-button" type="button" aria-pressed="false" aria-label="No-guess boards" title="Boards that can always be solved by logic">
+                <span class="tool-icon" aria-hidden="true">◇</span><span class="tool-text">No-guess</span>
+              </button>
+              <button class="tool-button" id="hint-button" type="button" aria-label="Hint" title="Show a square the numbers prove safe">
+                <span class="tool-icon" aria-hidden="true">?</span><span class="tool-text">Hint</span>
+              </button>
+              <button class="tool-button" id="agent-button" type="button" aria-pressed="false" aria-label="Watch AI play" title="Watch the solver play and explain each move">
+                <span class="tool-icon" aria-hidden="true">▶</span><span class="tool-text">Watch AI</span>
+              </button>
+              <button class="tool-button" id="daily-button" type="button" aria-label="Daily challenge" title="Today's board, the same for everyone">
+                <span class="tool-icon" aria-hidden="true">◷</span><span class="tool-text">Daily</span>
+              </button>
+              <button class="tool-button" id="share-button" type="button" aria-label="Share this board" title="Share a link to this exact board">
+                <span class="tool-icon" aria-hidden="true">↗</span><span class="tool-text">Share</span>
+              </button>
+              <button class="tool-button" id="replay-button" type="button" aria-label="Replay this game" title="Watch the finished game move by move" disabled>
+                <span class="tool-icon" aria-hidden="true">⟲</span><span class="tool-text">Replay</span>
+              </button>
+              <button class="tool-button" id="stats-button" type="button" aria-label="Stats" title="Games played, win rate, streaks, and speed">
+                <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-text">Stats</span>
+              </button>
+              <button class="tool-button" id="settings-button" type="button" aria-label="Settings" title="Colors, contrast, sound, and motion">
+                <span class="tool-icon" aria-hidden="true">⚙</span><span class="tool-text">Settings</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="replay-bar" id="replay-bar" role="group" aria-label="Replay controls" hidden>
+            <button class="tool-button" id="replay-back" type="button" aria-label="Previous move">⏮</button>
+            <button class="tool-button" id="replay-play" type="button" aria-label="Pause">⏸</button>
+            <button class="tool-button" id="replay-forward" type="button" aria-label="Next move">⏭</button>
+            <input class="replay-slider" id="replay-slider" type="range" min="0" max="0" value="0" aria-label="Replay position">
+            <output class="replay-position" id="replay-position">Move 0 of 0</output>
+            <select class="replay-speed" id="replay-speed" aria-label="Replay speed">
+              <option value="1">1×</option>
+              <option value="2" selected>2×</option>
+              <option value="4">4×</option>
+            </select>
+            <button class="tool-button" id="replay-exit" type="button">Exit replay</button>
           </div>
 
           <div class="board-frame">
@@ -95,11 +137,78 @@
 
           <div class="game-footer">
             <p class="game-message" id="game-message" role="status" aria-live="polite" aria-atomic="true">Choose a square. The first one is on us.</p>
-            <p class="board-legend"><span class="legend-dot" aria-hidden="true"></span> Numbers show nearby mines</p>
+            <p class="play-hint" id="board-instructions">First reveal is safe · right-click or C on a number to clear around it · arrows move, Enter reveals</p>
           </div>
         </section>
 
       </main>
     </div>
+
+    <dialog class="panel" id="share-dialog" aria-labelledby="share-title">
+      <div class="panel-head">
+        <h2 id="share-title">Share this board</h2>
+        <form method="dialog"><button class="panel-close" type="submit" aria-label="Close">×</button></form>
+      </div>
+      <p class="panel-note" id="share-note">Anyone with this link gets the same board.</p>
+      <textarea class="share-text" id="share-text" rows="5" readonly aria-label="Text to share"></textarea>
+      <div class="panel-actions">
+        <button class="panel-action" id="copy-share" type="button">Copy</button>
+        <button class="panel-action" id="native-share" type="button" hidden>Share…</button>
+      </div>
+    </dialog>
+
+    <dialog class="panel panel-wide" id="stats-dialog" aria-labelledby="stats-title">
+      <div class="panel-head">
+        <h2 id="stats-title">Your stats</h2>
+        <form method="dialog"><button class="panel-close" type="submit" aria-label="Close">×</button></form>
+      </div>
+      <div class="stats-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th scope="col">Mode</th>
+              <th scope="col">Played</th>
+              <th scope="col">Win %</th>
+              <th scope="col">Streak</th>
+              <th scope="col">Best streak</th>
+              <th scope="col">Best time</th>
+              <th scope="col">Average</th>
+              <th scope="col"><abbr title="Board difficulty (3BV) cleared per second">Best 3BV/s</abbr></th>
+            </tr>
+          </thead>
+          <tbody id="stats-body"></tbody>
+        </table>
+      </div>
+      <p class="panel-note">Stats stay in this browser. Games with hints, the AI, or an undo after a loss don't count.</p>
+      <div class="panel-actions">
+        <button class="panel-action is-danger" id="reset-stats" type="button">Reset stats</button>
+      </div>
+    </dialog>
+
+    <dialog class="panel" id="settings-dialog" aria-labelledby="settings-title">
+      <div class="panel-head">
+        <h2 id="settings-title">Settings</h2>
+        <form method="dialog"><button class="panel-close" type="submit" aria-label="Close">×</button></form>
+      </div>
+      <div class="settings-list">
+        <label class="setting">
+          <input type="checkbox" id="setting-colorblind">
+          <span><strong>Colorblind-safe numbers</strong><small>Number colors that stay distinct with common color vision differences.</small></span>
+        </label>
+        <label class="setting">
+          <input type="checkbox" id="setting-contrast">
+          <span><strong>High contrast</strong><small>Brighter edges and stronger difference between covered and open squares.</small></span>
+        </label>
+        <label class="setting">
+          <input type="checkbox" id="setting-sound">
+          <span><strong>Sound effects</strong><small>Short tones for reveals, flags, wins, and losses.</small></span>
+        </label>
+        <label class="setting">
+          <input type="checkbox" id="setting-motion">
+          <span><strong>Reduce motion</strong><small>Turns off animations such as the hint pulse.</small></span>
+        </label>
+      </div>
+      <p class="panel-note">Settings stay in this browser.</p>
+    </dialog>
   </body>
 </html>

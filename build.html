@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0c1110">
+    <meta name="description" content="How Minefield was built with agentic coding: each prompt, what the AI agent changed, and the commit that shipped it.">
+    <title>How Minefield was built</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="build.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./">minefield<span>.</span></a>
+      <a class="back-link" href="./">Play the game →</a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">AGENTIC CODING LOG</p>
+        <h1>How Minefield <em>was built</em></h1>
+        <p class="lead">A person wrote short prompts. AI coding agents planned the work, wrote the code, tested it, and kept these notes. Each step below shows what was asked, what changed, and the commit that shipped it.</p>
+        <dl class="totals">
+          <div><dt>Prompts</dt><dd>8</dd></div>
+          <div><dt>Commits</dt><dd>5+</dd></div>
+          <div><dt>Dependencies</dt><dd>0</dd></div>
+          <div><dt>Build steps</dt><dd>0</dd></div>
+        </dl>
+      </section>
+
+      <ol class="timeline">
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Sep 25</span>
+              <span class="step-title">Build a playable Minesweeper game</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Create a Minesweeper website anyone can play, and keep a log of prompts and results.</p>
+              <p><span class="label">Result</span> Three difficulties, a safe first reveal, number clues, flood reveal, flags, a timer, win and loss states, and a game engine kept separate from the page so it could be tested.</p>
+              <figure>
+                <img src="docs/images/minefield-early-build.png" alt="Early light-theme Minefield build with a Beginner board" loading="lazy">
+                <figcaption>The first playable build.</figcaption>
+              </figure>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Sep 25</span>
+              <span class="step-title">Make it work on desktop and add chording</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Use the full width on a PC so the whole board fits, and let right-click on a number clear its neighbors when enough flags are placed.</p>
+              <p><span class="label">Result</span> A wider desktop layout and right-click chording, with a backup screenshot saved first.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Sep 25</span>
+              <span class="step-title">Fill the screen and switch to a dark theme</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Fill the screen, make empty squares look different from unopened ones, and use a dark theme.</p>
+              <p><span class="label">Result</span> The dark layout that fills the window, with raised covered squares and sunken open squares.</p>
+              <figure>
+                <img src="minefield-preview.png" alt="Dark-theme Minefield with an opened Beginner board" loading="lazy">
+                <figcaption>The dark theme.</figcaption>
+              </figure>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 2</span>
+              <span class="step-title">Publish it on GitHub</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Set up a public repository and allow pushing.</p>
+              <p><span class="label">Result</span> A public repository, GitHub Pages hosting, and the private prompt log and old screenshots kept out of Git.</p>
+              <ul class="commits">
+                <li><a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/commit/8f232d117785a12ad8d7ac075dcef02643b54632"><code>8f232d1</code> Add playable Minesweeper project</a> <span>9 files · +1726</span></li>
+                <li><a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/commit/cfdb629596f580649c127ead9706ebaa539c0486"><code>cfdb629</code> Document public GitHub Pages deployment</a> <span>2 files · +6 −10</span></li>
+              </ul>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 2</span>
+              <span class="step-title">Tell the agentic coding story</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Rewrite the README around agentic coding, with a short prompt and result log and screenshots of how the site changed.</p>
+              <p><span class="label">Result</span> A README built around the prompt-to-product story.</p>
+              <ul class="commits">
+                <li><a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/commit/cf52306d43642b5211b8f73949fe03b8f870b487"><code>cf52306</code> Emphasize agentic coding in project README</a> <span>3 files · +38 −27</span></li>
+              </ul>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 3</span>
+              <span class="step-title">Plan improvements and ship them</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Review the project, plan improvements, then build them all and publish.</p>
+              <p><span class="label">Result</span> Custom boards up to 24 × 40, undo, keyboard chording with C, best times per difficulty, and five new engine tests.</p>
+              <ul class="commits">
+                <li><a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/commit/c62564e432e85358b7239d2e8b99fdba68b9aa52"><code>c62564e</code> Add custom boards, undo, keyboard chording, and best times</a> <span>7 files · +463 −57</span></li>
+              </ul>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 12</span>
+              <span class="step-title">Refresh the agent instructions</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Summarize the workspace, then rewrite the agent instructions to be better.</p>
+              <p><span class="label">Result</span> Instructions with a file map, the engine's rules for itself, and a dated status, each checked against the code.</p>
+              <ul class="commits">
+                <li><a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/commit/ba048f088edd466362b6d8b42af45eb1074d6339"><code>ba048f0</code> Refresh agent instructions and add CLAUDE.md import</a> <span>2 files · +46 −19</span></li>
+              </ul>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Oct 12</span>
+              <span class="step-title">Ten ideas, one at a time</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Suggest ten ways to expand the project, add them as a checklist, and build them one by one until none are left.</p>
+              <p><span class="label">Result</span> A solver that powers no-guess boards, hints, and an AI player that explains its moves; a daily challenge and shareable board links; game replay; stats with 3BV/s; offline play; accessibility settings; and this page. The agent also fixed four bugs it found on the way: Undo needed two presses, custom boards failed to load, the custom size panel showed on every level, and the timer started at three digits.</p>
+              <ul class="commits">
+                <li><a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/commits/main">See the latest commits on GitHub</a></li>
+              </ul>
+            </div>
+          </details>
+        </li>
+      </ol>
+
+      <section class="how">
+        <h2>How the work was done</h2>
+        <ul>
+          <li><strong>Instructions as the source of truth.</strong> <code>AGENTS.md</code> holds the rules, file map, and checklist that every agent session reads first.</li>
+          <li><strong>Rules stay testable.</strong> The game engine, solver, seeds, and stats are plain modules with Node tests; the page only draws and handles input.</li>
+          <li><strong>Check before claiming.</strong> Each change was run through the tests and checked in a real browser on desktop and phone sizes.</li>
+          <li><strong>Screenshots before visual changes.</strong> A baseline is saved first, so every change can be compared.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper">Source on GitHub</a>
+      <a href="./">Play Minefield</a>
+    </footer>
+  </body>
+</html>

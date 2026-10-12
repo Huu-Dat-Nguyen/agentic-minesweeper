@@ -56,7 +56,7 @@ export function toggleFlag(game, row, column) {
   return { ...game, board, phase: game.initialized ? game.phase : "ready" };
 }
 
-export function revealCell(game, row, column, random = Math.random) {
+export function revealCell(game, row, column, random = Math.random, { safeArea = false } = {}) {
   if (!isPlayableCell(game, row, column)) return game;
 
   const index = row * game.columns + column;
@@ -65,7 +65,7 @@ export function revealCell(game, row, column, random = Math.random) {
   let board = game.board.slice();
   let initialized = game.initialized;
   if (!initialized) {
-    board = placeMines(board, game, index, random);
+    board = placeMines(board, game, index, random, safeArea);
     initialized = true;
   }
 
@@ -124,14 +124,22 @@ function isPlayableCell(game, row, column) {
     && column < game.columns;
 }
 
-function placeMines(board, game, safeIndex, random) {
+function placeMines(board, game, safeIndex, random, safeArea) {
   if (typeof random !== "function") {
     throw new TypeError("Random source must be a function.");
   }
 
+  // A safe area keeps the first cell's neighbors mine-free too, when there is room.
+  const safeRow = Math.floor(safeIndex / game.columns);
+  const safeColumn = safeIndex % game.columns;
+  const area = [safeIndex, ...neighbors(game, safeRow, safeColumn)];
+  const protectedCells = new Set(
+    safeArea && board.length - area.length >= game.mineCount ? area : [safeIndex],
+  );
+
   const candidates = [];
   for (let index = 0; index < board.length; index += 1) {
-    if (index !== safeIndex) candidates.push(index);
+    if (!protectedCells.has(index)) candidates.push(index);
   }
 
   for (let index = candidates.length - 1; index > 0; index -= 1) {
@@ -179,6 +187,10 @@ function revealNeighbors(board, game, startIndex) {
       if (neighbor.adjacent === 0) queue.push(neighborIndex);
     }
   }
+}
+
+export function neighborIndices(game, index) {
+  return neighbors(game, Math.floor(index / game.columns), index % game.columns);
 }
 
 function neighbors(game, row, column) {
