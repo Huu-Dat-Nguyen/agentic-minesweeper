@@ -75,7 +75,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 - All 30 tests (16 engine, 14 feature) and the syntax checks pass.
 - The ten-idea expansion below was merged to `main` in PR #1 (`61bf362`) and is live. Four existing bugs were fixed along the way: Undo needed two presses, Custom boards threw an error, the custom panel showed on every level, and the timer started at three digits.
 - The live site was smoke-tested after deploy: new files served, bug fixes, no-guess, hint, share-link reproduction, daily, Watch AI, replay, stats, settings, service-worker cache, and the build page. Not yet checked live: phone layout, sound, and the install prompt.
-- Local `main` matches `origin/main`. The merged branch `feature/ten-idea-expansion` still exists on GitHub and can be deleted.
+- Local `main` matches `origin/main`; the merged feature branch has been deleted.
 - Next: keep docs, tests, and the published site in sync; when the solver or generator changes, note that old share links will produce different boards.
 
 ## Improvement checklist
