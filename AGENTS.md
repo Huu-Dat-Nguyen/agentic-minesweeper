@@ -73,12 +73,14 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 ## Status (2026-10-12)
 
 - All 30 tests (16 engine, 14 feature) and the syntax checks pass.
-- The ten-idea expansion below is complete but uncommitted, waiting for the user's review. Four existing bugs were fixed along the way: Undo needed two presses, Custom boards threw an error, the custom panel showed on every level, and the timer started at three digits.
-- Next: after review, commit and push, then smoke-test the live site (including offline and share links) from a clean clone.
+- The ten-idea expansion below was merged to `main` in PR #1 (`61bf362`) and is live. Four existing bugs were fixed along the way: Undo needed two presses, Custom boards threw an error, the custom panel showed on every level, and the timer started at three digits.
+- The live site was smoke-tested after deploy: new files served, bug fixes, no-guess, hint, share-link reproduction, daily, Watch AI, replay, stats, settings, service-worker cache, and the build page. Not yet checked live: phone layout, sound, and the install prompt.
+- Local `main` matches `origin/main`. The merged branch `feature/ten-idea-expansion` still exists on GitHub and can be deleted.
+- Next: keep docs, tests, and the published site in sync; when the solver or generator changes, note that old share links will produce different boards.
 
 ## Improvement checklist
 
-All ten items are done and checked in a browser. Work is kept local (not committed or pushed) until the user reviews it.
+All ten items are done, checked in a browser, reviewed, and merged.
 
 - [x] 1. No-guess mode: boards that can be solved by logic alone (`solver.mjs`, seeded by `seed.mjs`).
 - [x] 2. Hint button: highlight a square the numbers prove safe (or a mine) and explain why; hinted games don't count toward best times.
