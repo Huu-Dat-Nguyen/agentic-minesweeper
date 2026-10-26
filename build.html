@@ -212,7 +212,7 @@
         </li>
 
         <li class="step">
-          <details open>
+          <details>
             <summary>
               <span class="step-date">Oct 26</span>
               <span class="step-title">v2 step 4: keyboard, hints, the AI, daily and sharing</span>
@@ -220,6 +220,19 @@
             <div class="step-body">
               <p class="prompt"><span>Prompt</span> Continue with input and the tools row.</p>
               <p><span class="label">Result</span> Keyboard and mouse handling moved into its own module, with the "can this square be chorded?" check in one place instead of three. The AI player no longer changes the game itself: each of its moves goes through the same path as a player's move, so it is recorded and timed the same way. Share texts now live with each game kind, and one <code>interrupt()</code> call replaces four copies of "stop the AI, stop the replay, clear the hint". Settings are read through a small store that keeps only known, valid values.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 5: replay, stats, settings and sound</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Continue with replay, the dialogs, sound, and stored stats.</p>
+              <p><span class="label">Result</span> Replay now rebuilds a finished game from its saved move list instead of keeping a second copy of every board in memory, so the same data can later be stored with an account. All saved data (settings, stats, best times) goes through one store that is the only code touching browser storage, and it now checks best times when loading them, which v1 did not. Players keep their existing stats and best times: the storage keys and formats are unchanged. Every v1 feature is back on the new modules.</p>
             </div>
           </details>
         </li>
@@ -234,7 +247,7 @@
           <div><dt>v1 tests</dt><dd>30</dd></div>
           <div><dt>Expert no-guess</dt><dd>17 ms</dd></div>
         </dl>
-        <p class="section-lead">Progress: baseline saved; steps 1–4 of 7 done; the game page is being rebuilt. The comparison table fills in as each step lands.</p>
+        <p class="section-lead">Progress: baseline saved; steps 1–5 of 7 done; every v1 feature runs on the new code. The comparison table fills in as each step lands.</p>
       </section>
 
       <section class="how">

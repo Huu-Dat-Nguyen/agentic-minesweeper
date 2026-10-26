@@ -39,7 +39,10 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 - Tools row: No-guess toggle, Hint, Watch AI, Daily, Share, Replay, Stats, Settings.
 - Every game has a seed. The first reveal places mines from it, so a share link (`?r&c&m&seed&start&ng`) or daily link (`?daily=YYYY-MM-DD`) rebuilds the same board and opens its start square.
 - Games with hints, the AI, or an undo after a loss are "assisted" and don't count toward stats or best times.
-- Stored in `localStorage`: `minefield.bestTimes.v1` (daily times keyed `daily:DATE`), `minefield.stats.v1`, `minefield.settings.v1`.
+- Stored in `localStorage` (writer -> key -> readers), all through `data/store.mjs` `LocalStore`, which is the only code that touches these keys:
+  - `LocalStore.recordGame` (called by `app.mjs` `finishMessage`, first unassisted finish only) -> `minefield.stats.v1` (key per `statsKey`, shape from `core/stats.mjs`) -> `loadStats` (stats dialog in `ui/dialogs.mjs`, `recordGame`). `resetStats` clears it.
+  - `LocalStore.recordGame` (wins that beat the stored time) -> `minefield.bestTimes.v1` (whole seconds keyed by mode `bestKey`, daily times as `daily:DATE`; invalid values dropped on load) -> `bestTime` (BEST display in `app.mjs` `showBest`), `recordGame`. Reset stats keeps it.
+  - `ui/dialogs.mjs` settings dialog (colorblind, contrast, sound, reduceMotion) and `app.mjs` no-guess toggle -> `minefield.settings.v1` (via `saveSettings`, which merges) -> `loadSettings` (`ui/dialogs.mjs` at start, `app.mjs` at start).
 
 ## Engine conventions
 
@@ -88,7 +91,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 - [x] S2. Solver, seed, stats, moves: `core/solver.mjs`, `core/seed.mjs`, `core/stats.mjs`, new `core/moves.mjs` (games as seed + move list); golden must match; time `generateBoard`.
 - [x] S3. Modes + board: `modes.mjs` (Strategy for normal/daily/shared), `ui/board.mjs` (update changed cells only), bare `app.mjs` with basic play.
 - [x] S4. Input + tools: `ui/input.mjs`, hint, `ui/agent.mjs`, undo, daily, share, one `interrupt()` facade.
-- [ ] S5. Replay, dialogs, sound: `ui/replay.mjs` on moves, `ui/dialogs.mjs`, `ui/sound.mjs`, `data/store.mjs` `LocalStore` reading the existing keys.
+- [x] S5. Replay, dialogs, sound: `ui/replay.mjs` on moves, `ui/dialogs.mjs`, `ui/sound.mjs`, `data/store.mjs` `LocalStore` reading the existing keys.
 - [ ] S6. CSS + offline: `css/game.css` on `base.css`, merge duplicates, update `sw.js`, remove old files.
 - [ ] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
 - [ ] S8. Supabase schema + adapter: `supabase/schema.sql` with RLS, `data/supabase.mjs`, `CloudStore` (fake-fetch tests). User creates the project.

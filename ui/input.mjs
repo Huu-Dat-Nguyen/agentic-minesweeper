@@ -25,19 +25,25 @@ export function canChord(game, index) {
 }
 
 // getGame() and getActive() read the current game and active square;
+// isLocked() is true while the board must ignore the player (a replay is showing);
 // onMove(index) moves focus; onAction(type, index) asks for a "reveal", "flag" or "chord".
-export function createInput({ boardElement, scrollElement, getGame, getActive, getMode, onMove, onAction }) {
+export function createInput({ boardElement, scrollElement, getGame, getActive, getMode, isLocked, onMove, onAction }) {
+  // The one guard: every board event passes through here.
+  const listen = (type, handler) => boardElement.addEventListener(type, (event) => {
+    if (!isLocked()) handler(event);
+  });
+
   const indexOf = (event) => {
     const button = event.target.closest(".cell");
     return button ? Number(button.dataset.index) : null;
   };
 
-  boardElement.addEventListener("click", (event) => {
+  listen("click", (event) => {
     const index = indexOf(event);
     if (index !== null) onAction(getMode() === "flag" ? "flag" : "reveal", index);
   });
 
-  boardElement.addEventListener("contextmenu", (event) => {
+  listen("contextmenu", (event) => {
     const index = indexOf(event);
     if (index === null) return;
     event.preventDefault();
@@ -46,7 +52,7 @@ export function createInput({ boardElement, scrollElement, getGame, getActive, g
     else if (canChord(game, index)) onAction("chord", index);
   });
 
-  boardElement.addEventListener("keydown", (event) => {
+  listen("keydown", (event) => {
     const index = indexOf(event);
     if (index === null) return;
     const game = getGame();

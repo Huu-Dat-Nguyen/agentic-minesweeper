@@ -9,8 +9,11 @@ import { LocalStore } from "./data/store.mjs";
 import { dailySession, MODES, normalSession, READY_MESSAGE, sessionFromShare } from "./modes.mjs";
 import { createAgent } from "./ui/agent.mjs";
 import { createBoard } from "./ui/board.mjs";
+import { createClock, formatTime } from "./ui/clock.mjs";
+import { createDialogs } from "./ui/dialogs.mjs";
 import { createInput } from "./ui/input.mjs";
-import { createShareDialog } from "./ui/share.mjs";
+import { createReplay } from "./ui/replay.mjs";
+import { createSound, soundFor } from "./ui/sound.mjs";
 
 const boardElement = document.querySelector("#board");
 const mineCountElement = document.querySelector("#mine-count");
@@ -33,6 +36,7 @@ const hintButton = document.querySelector("#hint-button");
 const agentButton = document.querySelector("#agent-button");
 const dailyButton = document.querySelector("#daily-button");
 const shareButton = document.querySelector("#share-button");
+const bestTimeElement = document.querySelector("#best-time");
 
 const LOSS_MESSAGE = "A mine was hiding there. Take a breath and try again.";
 const CHORD_LOSS_MESSAGE = "A mine was among the squares cleared. Take a breath and try again.";
@@ -44,58 +48,23 @@ const FACES = {
 
 const board = createBoard(boardElement);
 const store = new LocalStore(() => window.localStorage);
-const shareDialog = createShareDialog();
+const clock = createClock(timerElement);
+const sound = createSound(() => dialogs.setting("sound"));
+const dialogs = createDialogs({
+  store,
+  onOpen: () => agent.stop(),
+  onSetting(key, value) {
+    if (key === "sound" && value) sound.play("flag");
+  },
+});
 let settings = { noGuess: false, ...store.loadSettings() };
 let session;
 let state;
 let assisted = false;
+let recorded = false;
 let mode = "reveal";
 let activeIndex = 0;
 let hint = null;
-const clock = { elapsed: 0, since: null, timer: null };
-
-function formatTime(seconds) {
-  return String(Math.min(seconds, 9999)).padStart(4, "0");
-}
-
-function elapsedMs() {
-  return clock.elapsed + (clock.since === null ? 0 : Date.now() - clock.since);
-}
-
-function elapsedSeconds() {
-  return Math.floor(elapsedMs() / 1000);
-}
-
-function updateTimer() {
-  timerElement.textContent = formatTime(elapsedSeconds());
-}
-
-function startClock() {
-  if (clock.since !== null) return;
-  clock.since = Date.now();
-  clock.timer = window.setInterval(updateTimer, 250);
-}
-
-function stopClock() {
-  if (clock.since !== null) clock.elapsed += Date.now() - clock.since;
-  clock.since = null;
-  window.clearInterval(clock.timer);
-  updateTimer();
-}
-
-// The clock runs while the game is being played, stops at the end, and resets on a fresh board.
-function syncClock() {
-  const { phase } = state.game;
-  if (phase === "playing") {
-    startClock();
-    return;
-  }
-  stopClock();
-  if (phase === "ready") {
-    clock.elapsed = 0;
-    updateTimer();
-  }
-}
 
 function setAddress(search) {
   try {
@@ -136,7 +105,13 @@ function showSession() {
   const prefix = session.mode.sizePrefix(session);
   if (prefix) parts.unshift(prefix);
   boardSizeElement.textContent = parts.join(" · ");
+  showBest();
   boardElement.setAttribute("aria-label", `${boardName()} Minesweeper board, ${config.rows} rows by ${config.columns} columns`);
+}
+
+function showBest() {
+  const best = store.bestTime(session.mode.bestKey(session));
+  bestTimeElement.textContent = best === null ? "--" : formatTime(best);
 }
 
 function showNoGuess() {
@@ -146,7 +121,9 @@ function showNoGuess() {
 
 function render(focus = false) {
   const { game } = state;
-  board.render(game, { hint, active: activeIndex, focus });
+  const frame = replay.game();
+  board.render(frame ?? game, { hint: frame ? null : hint, ghost: frame !== null, active: activeIndex, focus });
+  replay.sync();
   const remaining = Math.max(0, game.mineCount - countFlags(game));
   mineCountElement.textContent = String(remaining).padStart(3, "0");
   mineCountElement.setAttribute("aria-label", `${remaining} mines remaining`);
@@ -155,10 +132,12 @@ function render(focus = false) {
   restartButton.setAttribute("aria-label", label);
 }
 
-// Stops everything that runs or shows on its own (the AI, a hint) before the player acts.
+// Stops everything that runs or shows on its own (the AI, a replay, a hint) before the player acts.
 function interrupt() {
   agent.stop();
-  if (hint) {
+  const covered = hint !== null || replay.isActive();
+  replay.stop();
+  if (covered) {
     hint = null;
     render();
   }
@@ -169,10 +148,9 @@ function begin(next) {
   session = next;
   state = startGame(session);
   assisted = false;
+  recorded = false;
   activeIndex = session.start ?? 0;
-  stopClock();
-  clock.elapsed = 0;
-  updateTimer();
+  clock.reset();
   showSession();
   setAddress(session.mode.address(session));
   messageElement.textContent = session.mode.startMessage(session);
@@ -188,15 +166,27 @@ function startNew(difficulty) {
   begin(normalSession(difficulty, config, settings.noGuess));
 }
 
+// Records the finished game (first finish of an unassisted game only) and words the result.
 function finishMessage(game, lossMessage) {
-  if (game.phase === "lost") return lossMessage;
-  const seconds = elapsedSeconds();
+  const won = game.phase === "won";
+  const seconds = clock.seconds();
+  const boardValue = threeBV(game);
+  const { newBest } = store.recordGame({
+    statsKey: session.mode.statsKey(session),
+    bestKey: session.mode.bestKey(session),
+    won,
+    seconds,
+    boardValue,
+    assisted,
+    recorded,
+  });
+  recorded = true;
+  showBest();
+  if (!won) return lossMessage;
   if (assisted) {
     return `Cleared in ${formatTime(seconds)} seconds with help. Assisted games don't count toward stats or best times.`;
   }
-  const boardValue = threeBV(game);
-  // S5: record the finished game in stats and best times here (once, unassisted only).
-  return `Beautifully done. You cleared the field in ${formatTime(seconds)} seconds · 3BV ${boardValue} · ${rate(boardValue, seconds).toFixed(2)} 3BV/s.`;
+  return `${newBest ? "A new best time! " : "Beautifully done. "}You cleared the field in ${formatTime(seconds)} seconds · 3BV ${boardValue} · ${rate(boardValue, seconds).toFixed(2)} 3BV/s.`;
 }
 
 function chordHint(game, index) {
@@ -235,10 +225,13 @@ const MESSAGES = {
 // assisted marks the game as helped, focus overrides whether a square takes focus.
 function play(type, index, options = {}) {
   const before = state.game;
-  state = applyMove(state, { type, index, at: elapsedMs() });
+  state = applyMove(state, { type, index, at: clock.ms() });
   const { game } = state;
   if (options.assisted || (type === "undo" && game !== before && before.phase === "lost")) assisted = true;
-  if (game !== before) syncClock();
+  if (game !== before) {
+    clock.sync(game.phase);
+    if (type !== "undo") sound.play(soundFor(type, game));
+  }
   hint = isFinished(game) ? null : options.hint ?? null;
   if (options.hint) activeIndex = index;
 
@@ -257,6 +250,16 @@ function act(type, index) {
   activeIndex = index;
   play(type, index);
 }
+
+const replay = createReplay({
+  button: document.querySelector("#replay-button"),
+  getState: () => state,
+  isSeeded: () => session.start !== null,
+  say: (text) => {
+    messageElement.textContent = text;
+  },
+  onChange: () => render(),
+});
 
 const agent = createAgent({ button: agentButton, getGame: () => state.game, play });
 
@@ -314,8 +317,8 @@ function openShare() {
   }
   const { share, shareAddress } = session.mode;
   const link = `${window.location.origin}${window.location.pathname}${shareAddress({ ...session, start: state.start })}`;
-  const summary = share.summary(session, state.game, { seconds: elapsedSeconds(), assisted });
-  shareDialog.open(share.title, share.note, `${summary}\n${link}`);
+  const summary = share.summary(session, state.game, { seconds: clock.seconds(), assisted });
+  dialogs.openShare(share.title, share.note, `${summary}\n${link}`);
 }
 
 function setMode(next) {
@@ -339,6 +342,7 @@ createInput({
   getGame: () => state.game,
   getActive: () => activeIndex,
   getMode: () => mode,
+  isLocked: replay.isActive,
   onMove(index) {
     activeIndex = index;
     render(true);
