@@ -43,29 +43,38 @@ export function toggleFlag(game, index) {
   return { ...game, board };
 }
 
-export function reveal(game, index, random = Math.random, { safeArea = false } = {}) {
-  if (!isPlayable(game, index)) return game;
-  if (game.board[index].revealed || game.board[index].flagged) return game;
+export function reveal(game, index, random = Math.random, options) {
+  return revealEach(game, [index], random, options);
+}
 
-  let board = game.board.slice();
-  let initialized = game.initialized;
-  if (!initialized) {
-    board = placeMines(board, game, index, random, safeArea);
-    initialized = true;
+// Reveals the indices in order on one board copy, like calling reveal on each
+// in turn: it skips flagged and revealed cells and stops once the game ends.
+export function revealEach(game, indices, random = Math.random, { safeArea = false } = {}) {
+  let board = null;
+  let { initialized, phase, safeLeft } = game;
+
+  for (const index of indices) {
+    if (isFinished({ phase }) || !isIndex(game, index)) continue;
+    const current = (board ?? game.board)[index];
+    if (current.revealed || current.flagged) continue;
+
+    board ??= game.board.slice();
+    if (!initialized) {
+      placeMines(board, game, index, random, safeArea);
+      initialized = true;
+    }
+
+    const target = board[index];
+    board[index] = { ...target, revealed: true };
+    phase = "lost";
+    if (!target.mine) {
+      safeLeft -= 1;
+      if (target.adjacent === 0) safeLeft -= floodReveal(board, game, index);
+      phase = safeLeft === 0 ? "won" : "playing";
+    }
   }
 
-  const target = board[index];
-  board[index] = { ...target, revealed: true };
-
-  let safeLeft = game.safeLeft;
-  let phase = "lost";
-  if (!target.mine) {
-    safeLeft -= 1;
-    if (target.adjacent === 0) safeLeft -= floodReveal(board, game, index);
-    phase = safeLeft === 0 ? "won" : "playing";
-  }
-
-  return { ...game, board, initialized, phase, safeLeft };
+  return board ? { ...game, board, initialized, phase, safeLeft } : game;
 }
 
 export function chord(game, index) {
@@ -78,25 +87,18 @@ export function chord(game, index) {
   const adjacentFlags = around.filter((neighbor) => game.board[neighbor].flagged).length;
   if (adjacentFlags !== cell.adjacent) return game;
 
-  let next = game;
-  for (const neighbor of around) {
-    const { flagged, revealed } = next.board[neighbor];
-    if (flagged || revealed) continue;
+  return revealEach(game, around);
+}
 
-    next = reveal(next, neighbor);
-    if (isFinished(next)) break;
-  }
-
-  return next;
+function isIndex(game, index) {
+  return Number.isInteger(index) && index >= 0 && index < game.board.length;
 }
 
 function isPlayable(game, index) {
-  return !isFinished(game)
-    && Number.isInteger(index)
-    && index >= 0
-    && index < game.board.length;
+  return !isFinished(game) && isIndex(game, index);
 }
 
+// Fills the board copy with mines and clue numbers in place.
 function placeMines(board, game, safeIndex, random, safeArea) {
   if (typeof random !== "function") {
     throw new TypeError("Random source must be a function.");
@@ -133,8 +135,6 @@ function placeMines(board, game, safeIndex, random, safeArea) {
       .length;
     board[index] = { ...board[index], adjacent };
   }
-
-  return board;
 }
 
 // Reveals the empty region around startIndex in place; returns how many cells it opened.

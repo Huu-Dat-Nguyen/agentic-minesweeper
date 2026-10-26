@@ -1,15 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chord, countFlags, createGame, reveal, toggleFlag } from "../core/engine.mjs";
+import { chord, countFlags, createGame, reveal, revealEach, toggleFlag } from "../core/engine.mjs";
+import { createRandom } from "../core/seed.mjs";
 import { MAX_COLUMNS, MAX_ROWS, neighborIndices, rowCol } from "../core/grid.mjs";
 
-function seededRandom(seed = 42) {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
-}
+const seededRandom = () => createRandom("engine");
 
 function createChordScenario() {
   const initialGame = createGame({ rows: 12, columns: 12, mines: 18 });
@@ -280,4 +275,36 @@ test("wins immediately when the final safe cell is revealed by a chord", () => {
   const result = chord(game, clueIndex);
   assert.equal(result.board[lastSafeIndex].revealed, true);
   assert.equal(result.phase, "won");
+});
+
+test("revealEach matches revealing each index in turn", () => {
+  const { game: base } = createChordScenario();
+  const flagged = toggleFlag(base, base.board.findIndex((cell) => !cell.revealed));
+  const safeCells = flagged.board.flatMap((cell, index) => (cell.mine ? [] : [index]));
+  const mine = flagged.board.findIndex((cell) => cell.mine && !cell.flagged);
+  const cases = [
+    [],
+    safeCells,
+    [-1, 1.5, 9999, ...safeCells.slice(0, 5)],
+    [safeCells[0], mine, ...safeCells],
+    [...safeCells, mine],
+  ];
+
+  for (const indices of cases) {
+    const expected = indices.reduce((game, index) => reveal(game, index), flagged);
+    const result = revealEach(flagged, indices);
+    assert.deepEqual(result, expected);
+    assert.equal(result.safeLeft, expected.safeLeft);
+  }
+  assert.equal(revealEach(flagged, []), flagged);
+});
+
+test("revealEach opens an uninitialized board and stops once the game ends", () => {
+  const game = createGame({ rows: 3, columns: 3, mines: 2 });
+  const expected = [4, 0, 8].reduce((current, index) => reveal(current, index, seededRandom()), game);
+  assert.deepEqual(revealEach(game, [4, 0, 8], seededRandom()), expected);
+
+  const lost = revealEach(game, [0, 1, 2, 3, 4, 5, 6, 7, 8], () => 0);
+  assert.equal(lost.phase === "won" || lost.phase === "lost", true);
+  assert.equal(revealEach(lost, [0, 1, 2, 3]), lost);
 });
