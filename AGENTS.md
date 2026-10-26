@@ -53,7 +53,7 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 
 - Engine functions are pure: they return a new game object and never mutate their input. Invalid or no-op moves return the same object unchanged; invalid board sizes or random sources throw.
 - Game `phase` is `ready`, `playing`, `won`, or `lost`. Mines are placed on the first reveal and never on the revealed cell (its neighbors may still be mines).
-- Undo works by `app.mjs` pushing pre-action snapshots onto a history array; `undo(game, history)` pops the last one.
+- Every move (including undo) goes through `core/moves.mjs` `applyMove`, which keeps pre-move snapshots in `history` and records the move; replay rebuilds a game from its seed and moves.
 - The solver never reads hidden mines or trusts player flags. Its rules: single clues, overlapping clue pairs, and the total mine count. No-guess boards are only guaranteed solvable by these rules.
 - `generateBoard` uses a fixed attempt limit (300, or 40 for boards over 24% mines) so seeded boards come out the same everywhere. Changing the generator or solver changes what old share links produce.
 - Add or update tests for every rule, solver, seed, or stats change.
@@ -74,10 +74,7 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 
 ```powershell
 node --test
-node --check .\app.mjs
-node --check .\game-engine.mjs
-node --check .\solver.mjs
-node --check .\sw.js
+Get-ChildItem *.mjs, core\*.mjs, ui\*.mjs, data\*.mjs, sw.js | ForEach-Object { node --check $_.FullName }
 ```
 
 For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desktop/mobile layouts in a browser (serve with `py -m http.server 8000`; modules do not load from `file://`). The service worker serves network-first, but a browser may still hold old files; force-reload when testing. Report what was and was not verified.
@@ -85,7 +82,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 ## Status (2026-10-26)
 
 - v1 (`bc67f76`) is live on `main`: 30 tests pass; phone layout, sound and the install prompt are not yet checked live.
-- v2 work is on branch `feature/v2-rewrite`; plan in the checklist below. Stop after each step, report, and wait for the user's go-ahead.
+- v2 rewrite (S0–S7) is done on branch `feature/v2-rewrite`, not merged: 96 tests pass, seeded boards match v1, game screens pixel-identical; results in `report/rewrite-comparison.md`. Open decision: H2 (custom sizes share one best time). Plan in the checklist below. Stop after each step, report, and wait for the user's go-ahead.
 - Each step ends with: tests and checks passing, a new timeline entry in `build.html`, a `log` entry, and its box ticked here.
 - Seeded output must keep matching `tests/fixtures/golden.json`; if it can't, stop and ask.
 
@@ -98,7 +95,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 - [x] S4. Input + tools: `ui/input.mjs`, hint, `ui/agent.mjs`, undo, daily, share, one `interrupt()` facade.
 - [x] S5. Replay, dialogs, sound: `ui/replay.mjs` on moves, `ui/dialogs.mjs`, `ui/sound.mjs`, `data/store.mjs` `LocalStore` reading the existing keys.
 - [x] S6. CSS + offline: `css/game.css` on `base.css`, merge duplicates, update `sw.js`, remove old files.
-- [ ] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
+- [x] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
 - [ ] S8. Supabase schema + adapter: `supabase/schema.sql` with RLS, `data/supabase.mjs`, `CloudStore` (fake-fetch tests). User creates the project.
 - [ ] S9. Account UI + per-player stats against the real project.
 - [ ] S10. Leaderboard + history dialogs, "Accounts and leaderboard" build-page section, final docs and check.

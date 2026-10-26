@@ -1,6 +1,6 @@
 // Wiring only: turns UI events into moves and draws the result.
-import { countFlags, DIFFICULTIES } from "./core/engine.mjs";
-import { isFinished, MAX_COLUMNS, MAX_ROWS, neighborIndices, positionLabel, sizeError } from "./core/grid.mjs";
+import { countFlags, DIFFICULTIES, flagsAround } from "./core/engine.mjs";
+import { isFinished, MAX_COLUMNS, MAX_ROWS, positionLabel, sizeError } from "./core/grid.mjs";
 import { applyMove, startGame } from "./core/moves.mjs";
 import { decodeShare } from "./core/seed.mjs";
 import { explainHint, findHint } from "./core/solver.mjs";
@@ -88,13 +88,17 @@ function boardName() {
   return names[session.difficulty] ?? DIFFICULTIES[session.difficulty].label;
 }
 
-function showSession() {
-  const { difficulty, config, noGuess } = session;
-  for (const button of difficultyButtons) {
-    const selected = button.dataset.difficulty === difficulty;
+function markSelected(buttons, key, value) {
+  for (const button of buttons) {
+    const selected = button.dataset[key] === value;
     button.classList.toggle("is-selected", selected);
     button.setAttribute("aria-pressed", String(selected));
   }
+}
+
+function showSession() {
+  const { difficulty, config, noGuess } = session;
+  markSelected(difficultyButtons, "difficulty", difficulty);
   customSizeElement.hidden = difficulty !== "custom";
   dailyButton.classList.toggle("is-on", session.mode === MODES.daily);
   if (difficulty === "custom") {
@@ -120,9 +124,9 @@ function showNoGuess() {
 }
 
 function render(focus = false) {
-  const { game } = state;
   const frame = replay.game();
-  board.render(frame ?? game, { hint: frame ? null : hint, ghost: frame !== null, active: activeIndex, focus });
+  const game = frame ?? state.game;
+  board.render(game, { hint: frame ? null : hint, ghost: frame !== null, active: activeIndex, focus });
   replay.sync();
   const remaining = Math.max(0, game.mineCount - countFlags(game));
   mineCountElement.textContent = String(remaining).padStart(3, "0");
@@ -191,7 +195,7 @@ function finishMessage(game, lossMessage) {
 
 function chordHint(game, index) {
   const needed = game.board[index].adjacent;
-  const flags = neighborIndices(game, index).filter((neighbor) => game.board[neighbor].flagged).length;
+  const flags = flagsAround(game, index);
   if (flags < needed) return `Place exactly ${needed} flag${needed === 1 ? "" : "s"} around this number to clear its neighbors.`;
   if (flags > needed) return `Remove flags until exactly ${needed} remain around this number.`;
   return "There are no covered neighbors left to clear.";
@@ -281,18 +285,20 @@ function showHint() {
   render();
 }
 
-// The setting decides the next normal board; a board that has not started yet follows it too.
+// The setting decides the next normal board. A board with no reveal recorded yet follows it
+// too; once a reveal is recorded (even if undone) replay depends on the old value.
 function toggleNoGuess() {
   settings = { ...settings, noGuess: !settings.noGuess };
   store.saveSettings({ noGuess: settings.noGuess });
-  if (!state.game.initialized) {
+  const follows = !state.moves.some((move) => move.type === "reveal");
+  if (follows) {
     session = { ...session, noGuess: settings.noGuess };
     state = { ...state, noGuess: settings.noGuess };
     showSession();
   }
   showNoGuess();
   messageElement.textContent = settings.noGuess
-    ? state.game.initialized
+    ? !follows
       ? "No-guess is on. Your next board will never need a guess."
       : "No-guess is on. This board will never need a guess."
     : "No-guess is off. Boards are classic random layouts.";
@@ -323,11 +329,7 @@ function openShare() {
 
 function setMode(next) {
   mode = next;
-  for (const button of modeButtons) {
-    const selected = button.dataset.mode === mode;
-    button.classList.toggle("is-selected", selected);
-    button.setAttribute("aria-pressed", String(selected));
-  }
+  markSelected(modeButtons, "mode", mode);
   if (isFinished(state.game)) return;
   messageElement.textContent = mode === "flag"
     ? "Flag mode: select a square to mark or unmark it."

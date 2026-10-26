@@ -208,3 +208,18 @@ test("drops malformed stored stats", () => {
   assert.deepEqual(sanitizeStats(null), {});
   assert.deepEqual(sanitizeStats([1]), {});
 });
+
+test("the start hint and the AI skip a flagged middle square instead of looping", () => {
+  const flagged = toggleFlag(createGame(DIFFICULTIES.beginner), 40);
+  const hint = findHint(flagged);
+  assert.equal(hint.kind, "start");
+  assert.notEqual(hint.cells[0], 40);
+  const move = nextAgentMove(flagged, () => 0);
+  assert.equal(move.action, "reveal");
+  assert.equal(flagged.board[move.index].flagged, false);
+
+  let all = createGame({ rows: 1, columns: 2, mines: 1 });
+  all = toggleFlag(toggleFlag(all, 0), 1);
+  assert.equal(findHint(all), null);
+  assert.equal(nextAgentMove(all, () => 0), null);
+});

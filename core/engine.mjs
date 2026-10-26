@@ -77,17 +77,18 @@ export function revealEach(game, indices, random = Math.random, { safeArea = fal
   return board ? { ...game, board, initialized, phase, safeLeft } : game;
 }
 
+export function flagsAround(game, index) {
+  return neighborIndices(game, index).filter((neighbor) => game.board[neighbor].flagged).length;
+}
+
 export function chord(game, index) {
   if (!isPlayable(game, index) || !game.initialized) return game;
 
   const cell = game.board[index];
   if (!cell.revealed || cell.adjacent === 0) return game;
 
-  const around = neighborIndices(game, index);
-  const adjacentFlags = around.filter((neighbor) => game.board[neighbor].flagged).length;
-  if (adjacentFlags !== cell.adjacent) return game;
-
-  return revealEach(game, around);
+  if (flagsAround(game, index) !== cell.adjacent) return game;
+  return revealEach(game, neighborIndices(game, index));
 }
 
 function isIndex(game, index) {

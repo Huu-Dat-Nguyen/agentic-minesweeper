@@ -133,3 +133,12 @@ test("start is the square whose reveal placed the mines", () => {
   assert.equal(state.start, 40);
   assert.equal(startGame({ config: CONFIG, seed: "start-seed", noGuess: false, start: 12 }).start, 12);
 });
+
+test("undoing the first reveal clears the share start square", () => {
+  let state = startGame({ config: DIFFICULTIES.beginner, seed: "undo-start", noGuess: false });
+  state = applyMove(state, { type: "reveal", index: 30, at: 0 });
+  assert.equal(state.start, 30);
+  state = applyMove(state, { type: "undo", at: 5 });
+  assert.equal(state.game.initialized, false);
+  assert.equal(state.start, null);
+});

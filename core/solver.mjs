@@ -1,5 +1,5 @@
 import { reveal, revealEach } from "./engine.mjs";
-import { isFinished, neighborIndices, positionLabel } from "./grid.mjs";
+import { indexAt, isFinished, neighborIndices, positionLabel } from "./grid.mjs";
 
 // Deduces safe squares and mines using only what a player can see: revealed
 // numbers and the total mine count. Player flags are ignored because they may
@@ -137,12 +137,12 @@ export function explainHint(game, hint) {
   return EXPLANATIONS[hint.rule]?.(game, hint, say) ?? "";
 }
 
-function centerIndex(game) {
-  return Math.floor(game.rows / 2) * game.columns + Math.floor(game.columns / 2);
-}
-
+// The middle square, or the first unflagged one if the player flagged the middle;
+// null when every square is flagged.
 function startHint(game) {
-  return { kind: "start", cells: [centerIndex(game)], rule: "start", clues: [] };
+  const middle = indexAt(game.columns, Math.floor(game.rows / 2), Math.floor(game.columns / 2));
+  const index = game.board[middle].flagged ? game.board.findIndex((cell) => !cell.flagged) : middle;
+  return index === -1 ? null : { kind: "start", cells: [index], rule: "start", clues: [] };
 }
 
 // The first useful deduction, or a flag the solver proves wrong; null when a guess is needed.
@@ -189,8 +189,8 @@ export function isSolvable(game) {
 // square's neighbors clear and retries layouts until one can be solved by
 // logic alone. The attempt limit keeps seeded boards repeatable; very dense
 // boards are almost never guess-free, so they get fewer tries.
-export function generateBoard(game, index, random, { noGuess = false, attempts } = {}) {
-  attempts ??= game.mineCount / game.board.length > 0.24 ? 40 : 300;
+export function generateBoard(game, index, random, { noGuess = false } = {}) {
+  const attempts = game.mineCount / game.board.length > 0.24 ? 40 : 300;
   if (!noGuess) return { game: reveal(game, index, random), guaranteed: false };
 
   let candidate = game;
@@ -246,7 +246,8 @@ export function nextAgentMove(game, random = Math.random) {
   if (isFinished(game)) return null;
 
   if (!game.initialized) {
-    return { action: "reveal", index: startHint(game).cells[0], kind: "start", clues: [], text: "Opening in the middle. The first square is always safe." };
+    const start = startHint(game);
+    return start && { action: "reveal", index: start.cells[0], kind: "start", clues: [], text: "Opening in the middle. The first square is always safe." };
   }
 
   const deduction = deduce(game);

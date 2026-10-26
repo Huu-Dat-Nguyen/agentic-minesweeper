@@ -165,7 +165,8 @@ details[open] summary::after {
   border-top: 1px solid var(--line);
 }
 
-.step-body p {
+.step-body p,
+.section-lead {
   margin: 12px 0 0;
   color: #c6d1ca;
   font-size: 14px;
@@ -285,10 +286,4 @@ code {
   .lead {
     font-size: 15px;
   }
-}
-
-.section-lead {
-  margin: 12px 0 0;
-  color: #c6d1ca;
-  font-size: 14px;
 }

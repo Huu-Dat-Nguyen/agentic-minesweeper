@@ -29,6 +29,7 @@ The full story, prompt by prompt, is on the in-game **[How it was built](https:/
 | Rewrite the README around agentic coding | Recast the project as a prompt-to-product record with a concise prompt/result log and evolution screenshots. |
 | Execute the full improvement plan | Added custom boards (up to 24 × 40), undo, keyboard chording (C), best times per difficulty, a clamped mine counter, a four-digit timer, and a 16-test suite; pushed to the public repository. |
 | Suggest ten expansions and build them one by one | Added a logic solver powering no-guess boards, hints, and an AI player that explains its moves; a daily challenge and shareable board links; game replay; stats with 3BV/s; offline play; accessibility settings; and a "How it was built" page. Fixed four bugs found along the way. 30 tests. |
+| Rewrite the code under my coding rules and compare | Split the 1,102-line page script into 17 small modules with each piece of logic in one place; a move now repaints 2 squares instead of 480 (7.7 → 1.3 ms on Expert); 96 tests; every old board link and every screen unchanged; app code 14% larger. See [the comparison](report/rewrite-comparison.md). |
 
 The images compare an early playable build with the current release. Historical full-size backups stay local; the README uses a cropped copy of the early screenshot.
 
@@ -67,11 +68,9 @@ Run the tests with Node.js 18 or later; no packages are needed:
 
 ```powershell
 node --test
-node --check .\app.mjs
-node --check .\game-engine.mjs
-node --check .\solver.mjs
-node --check .\sw.js
 ```
+
+The game rules live in `core/` (pure modules, no page code), the page pieces in `ui/`, saved data in `data/`, and `app.mjs` wires them together.
 
 ## Deployment
 

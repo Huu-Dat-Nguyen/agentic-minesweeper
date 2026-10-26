@@ -18,7 +18,7 @@ const PLAY = {
   reveal(state, index) {
     if (state.game.initialized) return { ...state, game: reveal(state.game, index) };
     // Skip board generation (up to 300 tries) for a move reveal would ignore anyway.
-    if (reveal(state.game, index, () => 0) === state.game) return state;
+    if (!Number.isInteger(index) || !state.game.board[index] || state.game.board[index].flagged) return state;
     const { game, guaranteed } = generateBoard(state.game, index, createRandom(state.seed), { noGuess: state.noGuess });
     return { ...state, game, guaranteed, start: index };
   },
@@ -36,6 +36,7 @@ export function applyMove(state, move) {
       ...state,
       game,
       guaranteed: game.initialized && state.guaranteed,
+      start: game.initialized ? state.start : null,
       history: state.history.slice(0, -1),
       moves: [...state.moves, move],
     };

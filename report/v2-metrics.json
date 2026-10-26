@@ -1,0 +1,523 @@
+{
+  "label": "v2",
+  "commit": "7ad57c4",
+  "measured": "2026-10-26",
+  "totals": {
+    "files": 33,
+    "lines": 5370,
+    "functions": 136,
+    "tests": 96
+  },
+  "expertNoGuessMs": 19,
+  "perFile": {
+    "app.mjs": {
+      "lines": 398,
+      "functions": 22,
+      "longest": [
+        {
+          "name": "finishMessage",
+          "lines": 21
+        },
+        {
+          "name": "play",
+          "lines": 20
+        },
+        {
+          "name": "showHint",
+          "lines": 17
+        },
+        {
+          "name": "showSession",
+          "lines": 16
+        },
+        {
+          "name": "toggleNoGuess",
+          "lines": 16
+        }
+      ]
+    },
+    "build.html": {
+      "lines": 282
+    },
+    "core/engine.mjs": {
+      "lines": 161,
+      "functions": 11,
+      "longest": [
+        {
+          "name": "placeMines",
+          "lines": 37
+        },
+        {
+          "name": "revealEach",
+          "lines": 27
+        },
+        {
+          "name": "createGame",
+          "lines": 20
+        },
+        {
+          "name": "floodReveal",
+          "lines": 20
+        },
+        {
+          "name": "toggleFlag",
+          "lines": 10
+        }
+      ]
+    },
+    "core/grid.mjs": {
+      "lines": 69,
+      "functions": 7,
+      "longest": [
+        {
+          "name": "neighborIndices",
+          "lines": 18
+        },
+        {
+          "name": "sizeError",
+          "lines": 12
+        },
+        {
+          "name": "inBounds",
+          "lines": 8
+        },
+        {
+          "name": "positionLabel",
+          "lines": 4
+        },
+        {
+          "name": "rowCol",
+          "lines": 3
+        }
+      ]
+    },
+    "core/moves.mjs": {
+      "lines": 70,
+      "functions": 4,
+      "longest": [
+        {
+          "name": "applyMove",
+          "lines": 19
+        },
+        {
+          "name": "replay",
+          "lines": 15
+        },
+        {
+          "name": "startGame",
+          "lines": 5
+        },
+        {
+          "name": "toRecord",
+          "lines": 3
+        }
+      ]
+    },
+    "core/seed.mjs": {
+      "lines": 104,
+      "functions": 11,
+      "longest": [
+        {
+          "name": "decodeShare",
+          "lines": 22
+        },
+        {
+          "name": "encodeShare",
+          "lines": 11
+        },
+        {
+          "name": "createRandom",
+          "lines": 10
+        },
+        {
+          "name": "hashSeed",
+          "lines": 8
+        },
+        {
+          "name": "makeSeed",
+          "lines": 7
+        }
+      ]
+    },
+    "core/solver.mjs": {
+      "lines": 277,
+      "functions": 14,
+      "longest": [
+        {
+          "name": "deduce",
+          "lines": 43
+        },
+        {
+          "name": "applyPairRule",
+          "lines": 41
+        },
+        {
+          "name": "nextAgentMove",
+          "lines": 33
+        },
+        {
+          "name": "guessFrom",
+          "lines": 32
+        },
+        {
+          "name": "buildConstraints",
+          "lines": 16
+        }
+      ]
+    },
+    "core/stats.mjs": {
+      "lines": 99,
+      "functions": 6,
+      "longest": [
+        {
+          "name": "threeBV",
+          "lines": 24
+        },
+        {
+          "name": "sanitizeStats",
+          "lines": 21
+        },
+        {
+          "name": "recordResult",
+          "lines": 16
+        },
+        {
+          "name": "summarize",
+          "lines": 12
+        },
+        {
+          "name": "emptyEntry",
+          "lines": 3
+        }
+      ]
+    },
+    "css/base.css": {
+      "lines": 67
+    },
+    "css/build.css": {
+      "lines": 289
+    },
+    "css/game.css": {
+      "lines": 1182
+    },
+    "data/store.mjs": {
+      "lines": 92,
+      "functions": 2,
+      "longest": [
+        {
+          "name": "sanitizeSettings",
+          "lines": 8
+        },
+        {
+          "name": "sanitizeBestTimes",
+          "lines": 8
+        }
+      ]
+    },
+    "index.html": {
+      "lines": 215
+    },
+    "modes.mjs": {
+      "lines": 125,
+      "functions": 5,
+      "longest": [
+        {
+          "name": "dailySession",
+          "lines": 11
+        },
+        {
+          "name": "progressBar",
+          "lines": 6
+        },
+        {
+          "name": "difficultyOf",
+          "lines": 6
+        },
+        {
+          "name": "sessionFromShare",
+          "lines": 6
+        },
+        {
+          "name": "normalSession",
+          "lines": 3
+        }
+      ]
+    },
+    "sw.js": {
+      "lines": 68,
+      "functions": 0,
+      "longest": []
+    },
+    "tests/board.test.mjs": {
+      "lines": 77,
+      "functions": 0,
+      "longest": []
+    },
+    "tests/engine.test.mjs": {
+      "lines": 310,
+      "functions": 2,
+      "longest": [
+        {
+          "name": "createChordScenario",
+          "lines": 18
+        },
+        {
+          "name": "flagMinesAround",
+          "lines": 7
+        }
+      ]
+    },
+    "tests/features.test.mjs": {
+      "lines": 225,
+      "functions": 2,
+      "longest": [
+        {
+          "name": "buildGame",
+          "lines": 13
+        },
+        {
+          "name": "playAgentToEnd",
+          "lines": 12
+        }
+      ]
+    },
+    "tests/golden.test.mjs": {
+      "lines": 18,
+      "functions": 0,
+      "longest": []
+    },
+    "tests/grid.test.mjs": {
+      "lines": 63,
+      "functions": 0,
+      "longest": []
+    },
+    "tests/input.test.mjs": {
+      "lines": 44,
+      "functions": 0,
+      "longest": []
+    },
+    "tests/modes.test.mjs": {
+      "lines": 126,
+      "functions": 1,
+      "longest": [
+        {
+          "name": "strip",
+          "lines": 11
+        }
+      ]
+    },
+    "tests/moves.test.mjs": {
+      "lines": 144,
+      "functions": 1,
+      "longest": [
+        {
+          "name": "playThrough",
+          "lines": 10
+        }
+      ]
+    },
+    "tests/replay.test.mjs": {
+      "lines": 76,
+      "functions": 2,
+      "longest": [
+        {
+          "name": "normalGame",
+          "lines": 5
+        },
+        {
+          "name": "seededGame",
+          "lines": 5
+        }
+      ]
+    },
+    "tests/store.test.mjs": {
+      "lines": 126,
+      "functions": 2,
+      "longest": [
+        {
+          "name": "fakeStorage",
+          "lines": 4
+        },
+        {
+          "name": "storeWith",
+          "lines": 4
+        }
+      ]
+    },
+    "tests/sw.test.mjs": {
+      "lines": 19,
+      "functions": 0,
+      "longest": []
+    },
+    "ui/agent.mjs": {
+      "lines": 55,
+      "functions": 5,
+      "longest": [
+        {
+          "name": "createAgent",
+          "lines": 47
+        },
+        {
+          "name": "step",
+          "lines": 17
+        },
+        {
+          "name": "stop",
+          "lines": 7
+        },
+        {
+          "name": "show",
+          "lines": 6
+        },
+        {
+          "name": "start",
+          "lines": 5
+        }
+      ]
+    },
+    "ui/board.mjs": {
+      "lines": 145,
+      "functions": 7,
+      "longest": [
+        {
+          "name": "createBoard",
+          "lines": 56
+        },
+        {
+          "name": "cellView",
+          "lines": 34
+        },
+        {
+          "name": "render",
+          "lines": 31
+        },
+        {
+          "name": "changedCells",
+          "lines": 27
+        },
+        {
+          "name": "build",
+          "lines": 16
+        }
+      ]
+    },
+    "ui/clock.mjs": {
+      "lines": 45,
+      "functions": 6,
+      "longest": [
+        {
+          "name": "createClock",
+          "lines": 40
+        },
+        {
+          "name": "sync",
+          "lines": 12
+        },
+        {
+          "name": "stop",
+          "lines": 6
+        },
+        {
+          "name": "reset",
+          "lines": 5
+        },
+        {
+          "name": "formatTime",
+          "lines": 3
+        }
+      ]
+    },
+    "ui/dialogs.mjs": {
+      "lines": 147,
+      "functions": 8,
+      "longest": [
+        {
+          "name": "createShareDialog",
+          "lines": 35
+        },
+        {
+          "name": "createSettings",
+          "lines": 28
+        },
+        {
+          "name": "createStatsDialog",
+          "lines": 25
+        },
+        {
+          "name": "statsRows",
+          "lines": 17
+        },
+        {
+          "name": "open",
+          "lines": 13
+        }
+      ]
+    },
+    "ui/input.mjs": {
+      "lines": 74,
+      "functions": 4,
+      "longest": [
+        {
+          "name": "createInput",
+          "lines": 45
+        },
+        {
+          "name": "nextIndex",
+          "lines": 13
+        },
+        {
+          "name": "canChord",
+          "lines": 4
+        },
+        {
+          "name": "indexOf",
+          "lines": 4
+        }
+      ]
+    },
+    "ui/replay.mjs": {
+      "lines": 134,
+      "functions": 11,
+      "longest": [
+        {
+          "name": "createReplay",
+          "lines": 112
+        },
+        {
+          "name": "schedule",
+          "lines": 13
+        },
+        {
+          "name": "start",
+          "lines": 12
+        },
+        {
+          "name": "stop",
+          "lines": 11
+        },
+        {
+          "name": "play",
+          "lines": 8
+        }
+      ]
+    },
+    "ui/sound.mjs": {
+      "lines": 44,
+      "functions": 3,
+      "longest": [
+        {
+          "name": "createSound",
+          "lines": 28
+        },
+        {
+          "name": "play",
+          "lines": 22
+        },
+        {
+          "name": "soundFor",
+          "lines": 5
+        }
+      ]
+    }
+  }
+}
