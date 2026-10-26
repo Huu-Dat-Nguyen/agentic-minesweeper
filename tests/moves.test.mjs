@@ -121,3 +121,15 @@ test("a start square opens at time 0, is recorded for replay, and cannot be undo
   assert.equal(frames.length, 2);
   assert.deepEqual(frames[1].game, state.game);
 });
+
+test("start is the square whose reveal placed the mines", () => {
+  let state = startGame({ config: CONFIG, seed: "start-seed", noGuess: false });
+  assert.equal(state.start, null);
+  state = applyMove(state, { type: "flag", index: 0, at: 1 });
+  assert.equal(state.start, null);
+  state = applyMove(state, { type: "reveal", index: 40, at: 2 });
+  assert.equal(state.start, 40);
+  state = applyMove(state, { type: "reveal", index: 41, at: 3 });
+  assert.equal(state.start, 40);
+  assert.equal(startGame({ config: CONFIG, seed: "start-seed", noGuess: false, start: 12 }).start, 12);
+});

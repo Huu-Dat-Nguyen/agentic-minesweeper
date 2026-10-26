@@ -3,9 +3,14 @@ import { countFlags, DIFFICULTIES } from "./core/engine.mjs";
 import { isFinished, MAX_COLUMNS, MAX_ROWS, neighborIndices, positionLabel, sizeError } from "./core/grid.mjs";
 import { applyMove, startGame } from "./core/moves.mjs";
 import { decodeShare } from "./core/seed.mjs";
+import { explainHint, findHint } from "./core/solver.mjs";
 import { rate, threeBV } from "./core/stats.mjs";
-import { normalSession, READY_MESSAGE, sessionFromShare } from "./modes.mjs";
+import { LocalStore } from "./data/store.mjs";
+import { dailySession, MODES, normalSession, READY_MESSAGE, sessionFromShare } from "./modes.mjs";
+import { createAgent } from "./ui/agent.mjs";
 import { createBoard } from "./ui/board.mjs";
+import { createInput } from "./ui/input.mjs";
+import { createShareDialog } from "./ui/share.mjs";
 
 const boardElement = document.querySelector("#board");
 const mineCountElement = document.querySelector("#mine-count");
@@ -23,6 +28,11 @@ const customInputs = {
 const applyCustomButton = document.querySelector("#apply-custom");
 const difficultyButtons = [...document.querySelectorAll("[data-difficulty]")];
 const modeButtons = [...document.querySelectorAll("[data-mode]")];
+const noGuessButton = document.querySelector("#no-guess-button");
+const hintButton = document.querySelector("#hint-button");
+const agentButton = document.querySelector("#agent-button");
+const dailyButton = document.querySelector("#daily-button");
+const shareButton = document.querySelector("#share-button");
 
 const LOSS_MESSAGE = "A mine was hiding there. Take a breath and try again.";
 const CHORD_LOSS_MESSAGE = "A mine was among the squares cleared. Take a breath and try again.";
@@ -33,11 +43,15 @@ const FACES = {
 };
 
 const board = createBoard(boardElement);
+const store = new LocalStore(() => window.localStorage);
+const shareDialog = createShareDialog();
+let settings = { noGuess: false, ...store.loadSettings() };
 let session;
 let state;
 let assisted = false;
 let mode = "reveal";
 let activeIndex = 0;
+let hint = null;
 const clock = { elapsed: 0, since: null, timer: null };
 
 function formatTime(seconds) {
@@ -48,8 +62,12 @@ function elapsedMs() {
   return clock.elapsed + (clock.since === null ? 0 : Date.now() - clock.since);
 }
 
+function elapsedSeconds() {
+  return Math.floor(elapsedMs() / 1000);
+}
+
 function updateTimer() {
-  timerElement.textContent = formatTime(Math.floor(elapsedMs() / 1000));
+  timerElement.textContent = formatTime(elapsedSeconds());
 }
 
 function startClock() {
@@ -109,6 +127,7 @@ function showSession() {
     button.setAttribute("aria-pressed", String(selected));
   }
   customSizeElement.hidden = difficulty !== "custom";
+  dailyButton.classList.toggle("is-on", session.mode === MODES.daily);
   if (difficulty === "custom") {
     for (const key of Object.keys(customInputs)) customInputs[key].value = String(config[key]);
   }
@@ -120,9 +139,14 @@ function showSession() {
   boardElement.setAttribute("aria-label", `${boardName()} Minesweeper board, ${config.rows} rows by ${config.columns} columns`);
 }
 
+function showNoGuess() {
+  noGuessButton.setAttribute("aria-pressed", String(settings.noGuess));
+  noGuessButton.classList.toggle("is-on", settings.noGuess);
+}
+
 function render(focus = false) {
   const { game } = state;
-  board.render(game, { active: activeIndex, focus });
+  board.render(game, { hint, active: activeIndex, focus });
   const remaining = Math.max(0, game.mineCount - countFlags(game));
   mineCountElement.textContent = String(remaining).padStart(3, "0");
   mineCountElement.setAttribute("aria-label", `${remaining} mines remaining`);
@@ -131,7 +155,17 @@ function render(focus = false) {
   restartButton.setAttribute("aria-label", label);
 }
 
+// Stops everything that runs or shows on its own (the AI, a hint) before the player acts.
+function interrupt() {
+  agent.stop();
+  if (hint) {
+    hint = null;
+    render();
+  }
+}
+
 function begin(next) {
+  interrupt();
   session = next;
   state = startGame(session);
   assisted = false;
@@ -151,12 +185,12 @@ function startNew(difficulty) {
     messageElement.textContent = CUSTOM_ERROR;
     return;
   }
-  begin(normalSession(difficulty, config));
+  begin(normalSession(difficulty, config, settings.noGuess));
 }
 
 function finishMessage(game, lossMessage) {
   if (game.phase === "lost") return lossMessage;
-  const seconds = Math.floor(elapsedMs() / 1000);
+  const seconds = elapsedSeconds();
   if (assisted) {
     return `Cleared in ${formatTime(seconds)} seconds with help. Assisted games don't count toward stats or best times.`;
   }
@@ -171,6 +205,13 @@ function chordHint(game, index) {
   if (flags < needed) return `Place exactly ${needed} flag${needed === 1 ? "" : "s"} around this number to clear its neighbors.`;
   if (flags > needed) return `Remove flags until exactly ${needed} remain around this number.`;
   return "There are no covered neighbors left to clear.";
+}
+
+function firstRevealNote() {
+  if (!state.noGuess) return "";
+  return state.guaranteed
+    ? " No-guess board: every square can be worked out by logic."
+    : " No guess-free layout was found for this board, so it may need a guess.";
 }
 
 // What to say after a move. `before` and `after` are the games either side of it.
@@ -190,22 +231,91 @@ const MESSAGES = {
 };
 
 // The one place a move is applied: records it, runs the clock, says what happened, redraws.
-function play(type, index) {
+// options: message and loss replace the usual texts, hint is shown after the move,
+// assisted marks the game as helped, focus overrides whether a square takes focus.
+function play(type, index, options = {}) {
   const before = state.game;
   state = applyMove(state, { type, index, at: elapsedMs() });
   const { game } = state;
-  if (type === "undo" && game !== before && before.phase === "lost") assisted = true;
+  if (options.assisted || (type === "undo" && game !== before && before.phase === "lost")) assisted = true;
   if (game !== before) syncClock();
+  hint = isFinished(game) ? null : options.hint ?? null;
+  if (options.hint) activeIndex = index;
 
-  messageElement.textContent = game !== before && isFinished(game)
-    ? finishMessage(game, type === "chord" ? CHORD_LOSS_MESSAGE : LOSS_MESSAGE)
-    : MESSAGES[type](before, game, index);
-  render(type !== "undo" || game !== before);
+  if (game !== before && isFinished(game)) {
+    messageElement.textContent = finishMessage(game, options.loss ?? (type === "chord" ? CHORD_LOSS_MESSAGE : LOSS_MESSAGE));
+  } else {
+    const opened = !before.initialized && game.initialized;
+    messageElement.textContent = (options.message ?? MESSAGES[type](before, game, index)) + (opened ? firstRevealNote() : "");
+  }
+  render(options.focus ?? (type !== "undo" || game !== before));
 }
 
-function playAt(type, index) {
+// A player's move: it ends anything running on its own first.
+function act(type, index) {
+  interrupt();
   activeIndex = index;
   play(type, index);
+}
+
+const agent = createAgent({ button: agentButton, getGame: () => state.game, play });
+
+function showHint() {
+  interrupt();
+  if (isFinished(state.game)) {
+    messageElement.textContent = "This game is over. Start a new one for more hints.";
+    return;
+  }
+  const found = findHint(state.game);
+  if (!found) {
+    messageElement.textContent = "Hint: no square is certain right now. This spot needs a guess.";
+    return;
+  }
+  if (found.kind !== "start") assisted = true;
+  hint = { cells: found.cells, clues: found.clues };
+  activeIndex = found.cells[0];
+  messageElement.textContent = `Hint: ${explainHint(state.game, found)}`;
+  render();
+}
+
+// The setting decides the next normal board; a board that has not started yet follows it too.
+function toggleNoGuess() {
+  settings = { ...settings, noGuess: !settings.noGuess };
+  store.saveSettings({ noGuess: settings.noGuess });
+  if (!state.game.initialized) {
+    session = { ...session, noGuess: settings.noGuess };
+    state = { ...state, noGuess: settings.noGuess };
+    showSession();
+  }
+  showNoGuess();
+  messageElement.textContent = settings.noGuess
+    ? state.game.initialized
+      ? "No-guess is on. Your next board will never need a guess."
+      : "No-guess is on. This board will never need a guess."
+    : "No-guess is off. Boards are classic random layouts.";
+}
+
+function toggleAgent() {
+  if (agent.isRunning()) {
+    agent.stop();
+    messageElement.textContent = "AI stopped. Your move.";
+    return;
+  }
+  interrupt();
+  if (isFinished(state.game)) begin(session.mode.restart(session, settings.noGuess));
+  agent.start();
+}
+
+function openShare() {
+  interrupt();
+  if (state.start === null) {
+    messageElement.textContent = "Reveal a square first, then share this exact board.";
+    return;
+  }
+  const { share, shareAddress } = session.mode;
+  const link = `${window.location.origin}${window.location.pathname}${shareAddress({ ...session, start: state.start })}`;
+  const summary = share.summary(session, state.game, { seconds: elapsedSeconds(), assisted });
+  shareDialog.open(share.title, share.note, `${summary}\n${link}`);
 }
 
 function setMode(next) {
@@ -223,23 +333,17 @@ function setMode(next) {
       : "Select a square to reveal it.";
 }
 
-function cellIndex(event) {
-  const button = event.target.closest(".cell");
-  return button ? Number(button.dataset.index) : null;
-}
-
-boardElement.addEventListener("click", (event) => {
-  const index = cellIndex(event);
-  if (index !== null) playAt(mode === "flag" ? "flag" : "reveal", index);
-});
-
-boardElement.addEventListener("contextmenu", (event) => {
-  const index = cellIndex(event);
-  if (index === null) return;
-  event.preventDefault();
-  const cell = state.game.board[index];
-  if (!cell.revealed) playAt("flag", index);
-  else if (cell.adjacent > 0 && !isFinished(state.game)) playAt("chord", index);
+createInput({
+  boardElement,
+  scrollElement: document.querySelector("#board-scroll"),
+  getGame: () => state.game,
+  getActive: () => activeIndex,
+  getMode: () => mode,
+  onMove(index) {
+    activeIndex = index;
+    render(true);
+  },
+  onAction: act,
 });
 
 for (const button of difficultyButtons) {
@@ -248,8 +352,16 @@ for (const button of difficultyButtons) {
 for (const button of modeButtons) {
   button.addEventListener("click", () => setMode(button.dataset.mode));
 }
-restartButton.addEventListener("click", () => begin(session.mode.restart(session)));
-undoButton.addEventListener("click", () => play("undo"));
+restartButton.addEventListener("click", () => begin(session.mode.restart(session, settings.noGuess)));
+undoButton.addEventListener("click", () => {
+  interrupt();
+  play("undo");
+});
+noGuessButton.addEventListener("click", toggleNoGuess);
+hintButton.addEventListener("click", showHint);
+agentButton.addEventListener("click", toggleAgent);
+dailyButton.addEventListener("click", () => begin(dailySession()));
+shareButton.addEventListener("click", openShare);
 applyCustomButton.addEventListener("click", () => startNew("custom"));
 for (const input of Object.values(customInputs)) {
   input.addEventListener("change", () => {
@@ -268,6 +380,7 @@ function startFromAddress() {
   if (search) messageElement.textContent = "That board link was not valid, so here is a fresh game.";
 }
 
+showNoGuess();
 startFromAddress();
 
 if ("serviceWorker" in navigator && window.location.protocol.startsWith("http")) {

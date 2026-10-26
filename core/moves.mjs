@@ -5,10 +5,11 @@ import { sizeError } from "./grid.mjs";
 import { createRandom } from "./seed.mjs";
 import { generateBoard } from "./solver.mjs";
 
+// `state.start` is the square whose reveal placed the mines (null until then); it is what a share link needs.
 // With `start` (daily and shared boards) the first square is already open: it is
 // recorded as a move at time 0 for replay, but kept out of history so undo cannot remove it.
 export function startGame({ config, seed, noGuess, start }) {
-  const state = { config, seed, noGuess, game: createGame(config), history: [], moves: [], guaranteed: false };
+  const state = { config, seed, noGuess, game: createGame(config), history: [], moves: [], guaranteed: false, start: null };
   if (start === undefined || start === null) return state;
   return { ...applyMove(state, { type: "reveal", index: start, at: 0 }), history: [] };
 }
@@ -19,7 +20,7 @@ const PLAY = {
     // Skip board generation (up to 300 tries) for a move reveal would ignore anyway.
     if (reveal(state.game, index, () => 0) === state.game) return state;
     const { game, guaranteed } = generateBoard(state.game, index, createRandom(state.seed), { noGuess: state.noGuess });
-    return { ...state, game, guaranteed };
+    return { ...state, game, guaranteed, start: index };
   },
   flag: (state, index) => ({ ...state, game: toggleFlag(state.game, index) }),
   chord: (state, index) => ({ ...state, game: chord(state.game, index) }),

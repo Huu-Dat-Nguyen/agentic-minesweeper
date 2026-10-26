@@ -55,3 +55,72 @@ test("a daily link becomes a daily session", () => {
   assert.equal(session.mode, MODES.daily);
   assert.equal(session.date, "2026-10-26");
 });
+
+// A 1 × 4 board: a mine, a "1", and two empty squares, so its 3BV is 1.
+function strip({ revealed, phase }) {
+  const cell = (mine, adjacent, open) => ({ mine, adjacent, revealed: open, flagged: false });
+  return {
+    rows: 1,
+    columns: 4,
+    mineCount: 1,
+    initialized: true,
+    phase,
+    board: [cell(true, 0, false), cell(false, 1, revealed >= 1), cell(false, 0, revealed >= 2), cell(false, 0, revealed >= 3)],
+  };
+}
+
+const CLEARED = "🟩".repeat(10);
+const THIRD = `${"🟩".repeat(3)}${"⬛".repeat(7)}`;
+
+test("a normal board shares its size, result and a progress bar, never the mines", () => {
+  const { summary } = MODES.normal.share;
+  const session = normalSession("custom", { rows: 1, columns: 4, mines: 1 }, true);
+  const extras = { seconds: 2, assisted: false };
+  assert.equal(summary(session, strip({ revealed: 0, phase: "ready" }), extras), "Try this Minefield board: 1×4, 1 mines, no guessing needed.");
+  assert.equal(
+    summary({ ...session, noGuess: false }, strip({ revealed: 0, phase: "ready" }), extras),
+    "Try this Minefield board: 1×4, 1 mines.",
+  );
+  assert.equal(summary(session, strip({ revealed: 3, phase: "won" }), extras), "I cleared this Minefield board (1×4, 1 mines) in 2s. Can you beat it?");
+  assert.equal(
+    summary(session, strip({ revealed: 3, phase: "won" }), { seconds: 2, assisted: true }),
+    "I cleared this Minefield board (1×4, 1 mines) in 2s with help. Can you beat it?",
+  );
+  assert.equal(
+    summary(session, strip({ revealed: 1, phase: "lost" }), extras),
+    `This Minefield board (1×4, 1 mines) got me at 33% cleared. Can you finish it?\n${THIRD}`,
+  );
+});
+
+test("the daily board shares its date, result and bar", () => {
+  const { summary } = MODES.daily.share;
+  const session = dailySession("2026-10-26");
+  const extras = { seconds: 2, assisted: false };
+  assert.equal(summary(session, strip({ revealed: 1, phase: "playing" }), extras), "Minefield daily 2026-10-26\nCan you clear today's board?");
+  assert.equal(
+    summary(session, strip({ revealed: 3, phase: "won" }), extras),
+    `Minefield daily 2026-10-26\n✅ Cleared in 2s · 0.50 3BV/s\n${CLEARED}`,
+  );
+  assert.equal(
+    summary(session, strip({ revealed: 3, phase: "won" }), { seconds: 2, assisted: true }),
+    `Minefield daily 2026-10-26\n✅ Cleared in 2s with help · 0.50 3BV/s\n${CLEARED}`,
+  );
+  assert.equal(
+    summary(session, strip({ revealed: 1, phase: "lost" }), extras),
+    `Minefield daily 2026-10-26\n💥 Hit a mine with 33% cleared\n${THIRD}`,
+  );
+});
+
+test("share links: a normal board needs its start, the daily one needs only its date", () => {
+  const normal = { ...normalSession("beginner", DIFFICULTIES.beginner), seed: "abc", start: 7 };
+  assert.deepEqual(decodeShare(MODES.normal.shareAddress(normal)), {
+    type: "shared", rows: 9, columns: 9, mines: 10, seed: "abc", start: 7, noGuess: false,
+  });
+  assert.equal(MODES.daily.shareAddress(dailySession("2026-10-26")), "?daily=2026-10-26");
+});
+
+test("restarting a normal board can take the current no-guess setting", () => {
+  const session = normalSession("beginner", DIFFICULTIES.beginner, false);
+  assert.equal(session.mode.restart(session, true).noGuess, true);
+  assert.equal(session.mode.restart(session).noGuess, false);
+});
