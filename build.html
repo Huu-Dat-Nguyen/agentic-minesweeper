@@ -160,7 +160,7 @@
         </li>
 
         <li class="step">
-          <details open>
+          <details>
             <summary>
               <span class="step-date">Oct 26</span>
               <span class="step-title">Plan v2: rewrite by the rules, then add accounts</span>
@@ -168,6 +168,19 @@
             <div class="step-body">
               <p class="prompt"><span>Prompt</span> Rewrite the code following my coding rules and compare what improved, add a database login to track players, and report it here. Split the work into one-hour steps with a checklist.</p>
               <p><span class="label">Result</span> An eleven-step plan. Before any code changed, the agent saved a baseline: the output of 20 seeded boards, 3 daily boards and 8 share links, so the rewrite can prove old links still build the same boards; size and speed numbers to compare against; and screenshots of every screen. This page moved onto a stylesheet shared with the game.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 1: one home for board geometry</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Start the rewrite with the grid and the game engine.</p>
+              <p><span class="label">Result</span> A new <code>core/grid.mjs</code> now holds the row and column math, neighbor lists, size checks and position labels that v1 repeated in about 15 places. The new engine works on square numbers instead of row and column pairs, keeps a running count of safe squares instead of rescanning the board after every reveal, and reuses one neighbor table per board size. To prove nothing changed, the old and new engines played about 3,000 random games side by side and produced identical boards every time; seeded boards still match v1 exactly.</p>
             </div>
           </details>
         </li>
@@ -182,7 +195,7 @@
           <div><dt>v1 tests</dt><dd>30</dd></div>
           <div><dt>Expert no-guess</dt><dd>17 ms</dd></div>
         </dl>
-        <p class="section-lead">Progress: baseline saved. The comparison table fills in as each step lands.</p>
+        <p class="section-lead">Progress: baseline saved; step 1 of 7 (grid and engine) done. The comparison table fills in as each step lands.</p>
       </section>
 
       <section class="how">

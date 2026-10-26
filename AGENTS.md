@@ -84,7 +84,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 ## v2 checklist (about 1 hour each; database only after the rewrite)
 
 - [x] S0. Baseline: branch, coding-rules snapshot, golden fixtures, baseline metrics and audit, `before-v2-*.png`, new log, build page on `css/base.css` with a v2 section.
-- [ ] S1. Core grid + engine: `core/grid.mjs` (single home for index math, neighbors, labels, size checks, `isFinished`), `core/engine.mjs`; tests under `tests/`.
+- [x] S1. Core grid + engine: `core/grid.mjs` (single home for index math, neighbors, labels, size checks, `isFinished`), `core/engine.mjs`; tests under `tests/`.
 - [ ] S2. Solver, seed, stats, moves: `core/solver.mjs`, `core/seed.mjs`, `core/stats.mjs`, new `core/moves.mjs` (games as seed + move list); golden must match; time `generateBoard`.
 - [ ] S3. Modes + board: `modes.mjs` (Strategy for normal/daily/shared), `ui/board.mjs` (update changed cells only), bare `app.mjs` with basic play.
 - [ ] S4. Input + tools: `ui/input.mjs`, hint, `ui/agent.mjs`, undo, daily, share, one `interrupt()` facade.
