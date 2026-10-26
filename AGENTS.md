@@ -9,19 +9,24 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 
 | Path | Role |
 |---|---|
-| `game-engine.mjs` | Pure game rules: `DIFFICULTIES`, `MAX_ROWS`/`MAX_COLUMNS`, `createGame`, `revealCell` (optional `safeArea` first reveal), `toggleFlag`, `chordCell`, `undo`, `neighborIndices`. No DOM access. |
-| `solver.mjs` | Logic solver using only visible information: `deduce`, `findHint`/`explainHint`, `isSolvable`, `generateBoard` (no-guess layouts), `chooseGuess`, `nextAgentMove`. |
-| `seed.mjs` | Seeded random (`createRandom`), daily date keys and start squares, share-link `encodeShare`/`decodeShare` with validation. |
-| `stats.mjs` | `threeBV`, `recordResult`, `summarize`, `sanitizeStats`. |
-| `game-engine.test.mjs`, `features.test.mjs` | `node:test` suites for the engine and for solver, seeds, and stats. |
-| `tests/golden.test.mjs`, `tests/fixtures/` | v1 outputs (`golden.json`, from `make-golden.mjs` at `bc67f76`) that seeded boards, daily boards and share links must keep matching. |
-| `app.mjs` | UI: rendering, input (mouse, touch, keyboard), timer, undo history, tools (hint, AI, daily, share, replay, stats, settings), sound, service-worker registration. |
-| `index.html`, `styles.css` | Markup, dialogs, and the dark, viewport-filling responsive layout. |
+| `core/grid.mjs` | Single home for board geometry: `MAX_ROWS`/`MAX_COLUMNS`, `sizeError`, `rowCol`/`indexAt`, `inBounds`, cached `neighborIndices`, `positionLabel`, `isFinished`. |
+| `core/engine.mjs` | Pure game rules on cell indices: `DIFFICULTIES`, `createGame`, `reveal`/`revealEach` (optional `safeArea` first reveal), `toggleFlag`, `chord`, `countFlags`. Games carry `safeLeft`. No DOM. |
+| `core/solver.mjs` | Logic solver on visible information only: `deduce`, `findHint`/`explainHint`, `isSolvable`, `generateBoard` (no-guess), `chooseGuess`, `nextAgentMove`. |
+| `core/seed.mjs` | Seeded random, daily keys and start squares, `encodeShare`/`encodeDaily`/`decodeShare`. |
+| `core/stats.mjs` | `threeBV`, `rate`, `recordResult`, `summarize`, `sanitizeStats`. |
+| `core/moves.mjs` | A game is seed + moves: `startGame`, `applyMove` (the one path for play and replay), `toRecord`, `replay`. |
+| `modes.mjs` | Strategy objects for normal, daily and shared games (keys, links, labels, share texts, restart) and session factories. |
+| `ui/*.mjs` | `board` (repaints changed cells only), `input` (events to intents, one guard spot), `agent`, `replay`, `dialogs` (stats, settings, share), `sound`, `clock`. |
+| `data/store.mjs` | `LocalStore`: the only code touching `localStorage` (see the data map below). |
+| `app.mjs` | Wiring only: session, one `play()` path for every move, one `interrupt()` facade. |
+| `tests/` | `node:test` suites for every module; `sw.test.mjs` keeps the offline file list complete. |
+| `tests/golden.test.mjs`, `tests/fixtures/` | v1 outputs (`golden.json`, written by `make-golden.mjs` at `bc67f76`, where the v1 modules it imports exist) that seeded boards, daily boards and share links must keep matching. |
+| `index.html`, `css/game.css` | Game markup, dialogs, and the dark, viewport-filling layout (on `css/base.css`). |
 | `build.html`, `css/build.css` | Public "How it was built" timeline page. Updated at the end of every v2 step. |
 | `css/base.css` | Shared colors, reset, header, focus and reduced motion for every page. |
 | `docs/coding-rules.md` | Snapshot of the author's coding rules that v2 follows. |
-| `report/` | v2 comparison: `baseline-audit.md`, `*-metrics.json` (from `measure.mjs`), `shots.mjs` (headless screenshots), later `rewrite-comparison.md`. |
-| `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and app install. Bump `CACHE_NAME` in `sw.js` when its file list changes. |
+| `report/` | v2 comparison: `baseline-audit.md`, `*-metrics.json` (from `measure.mjs`), `shots.mjs` (headless screenshots), `pixel-diff.py` (compare screenshot sets), later `rewrite-comparison.md`. |
+| `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and app install. Same-origin GETs only; bump `CACHE_NAME` when the list changes (`tests/sw.test.mjs` checks the list). |
 | `README.md` | Public write-up: prompt/result table, features, local play, deployment. |
 | `minefield-preview.png`, `docs/images/` | Public README and build-page images. |
 | `.claude/launch.json` | Local preview server (`py -m http.server 8000`). |
@@ -92,7 +97,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 - [x] S3. Modes + board: `modes.mjs` (Strategy for normal/daily/shared), `ui/board.mjs` (update changed cells only), bare `app.mjs` with basic play.
 - [x] S4. Input + tools: `ui/input.mjs`, hint, `ui/agent.mjs`, undo, daily, share, one `interrupt()` facade.
 - [x] S5. Replay, dialogs, sound: `ui/replay.mjs` on moves, `ui/dialogs.mjs`, `ui/sound.mjs`, `data/store.mjs` `LocalStore` reading the existing keys.
-- [ ] S6. CSS + offline: `css/game.css` on `base.css`, merge duplicates, update `sw.js`, remove old files.
+- [x] S6. CSS + offline: `css/game.css` on `base.css`, merge duplicates, update `sw.js`, remove old files.
 - [ ] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
 - [ ] S8. Supabase schema + adapter: `supabase/schema.sql` with RLS, `data/supabase.mjs`, `CloudStore` (fake-fetch tests). User creates the project.
 - [ ] S9. Account UI + per-player stats against the real project.

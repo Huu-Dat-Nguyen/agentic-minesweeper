@@ -225,7 +225,7 @@
         </li>
 
         <li class="step">
-          <details open>
+          <details>
             <summary>
               <span class="step-date">Oct 26</span>
               <span class="step-title">v2 step 5: replay, stats, settings and sound</span>
@@ -233,6 +233,19 @@
             <div class="step-body">
               <p class="prompt"><span>Prompt</span> Continue with replay, the dialogs, sound, and stored stats.</p>
               <p><span class="label">Result</span> Replay now rebuilds a finished game from its saved move list instead of keeping a second copy of every board in memory, so the same data can later be stored with an account. All saved data (settings, stats, best times) goes through one store that is the only code touching browser storage, and it now checks best times when loading them, which v1 did not. Players keep their existing stats and best times: the storage keys and formats are unchanged. Every v1 feature is back on the new modules.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 6: shared styles, offline, and the old code removed</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Continue with the stylesheets, offline support, and removing the old files.</p>
+              <p><span class="label">Result</span> The game's stylesheet now sits on the same base as this page, with duplicate button and panel rules merged and repeated colors turned into named values. Screenshots of every screen on desktop and phone were compared pixel by pixel with the v1 originals: the game looks exactly the same. The offline file list is now checked by a test, so it can no longer drift from the real files; it also caches the two images this page uses, and offline play was confirmed in Chrome with the network switched off. The five v1 files nothing used anymore were removed after the author approved it.</p>
             </div>
           </details>
         </li>
@@ -247,7 +260,7 @@
           <div><dt>v1 tests</dt><dd>30</dd></div>
           <div><dt>Expert no-guess</dt><dd>17 ms</dd></div>
         </dl>
-        <p class="section-lead">Progress: baseline saved; steps 1–5 of 7 done; every v1 feature runs on the new code. The comparison table fills in as each step lands.</p>
+        <p class="section-lead">Progress: baseline saved; steps 1–6 of 7 done; every v1 feature runs on the new code and the old code is gone. The comparison table fills in as each step lands.</p>
       </section>
 
       <section class="how">
