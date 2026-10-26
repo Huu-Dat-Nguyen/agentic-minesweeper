@@ -1,11 +1,12 @@
 // Offline support: serve fresh files when online and fall back to the cache
 // when offline. Bump CACHE_NAME when the file list changes.
-const CACHE_NAME = "minefield-v1";
+const CACHE_NAME = "minefield-v2";
 const APP_FILES = [
   "./",
   "index.html",
   "build.html",
-  "build.css",
+  "css/base.css",
+  "css/build.css",
   "styles.css",
   "app.mjs",
   "game-engine.mjs",

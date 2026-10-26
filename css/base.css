@@ -1,0 +1,67 @@
+/* Shared by every page: colors, type, reset, header, focus, reduced motion. */
+:root {
+  color-scheme: dark;
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  --ink: #e7ede8;
+  --muted: #99a69f;
+  --green: #83c5a1;
+  --amber: #e9ae6b;
+  --gold: #f3c87e;
+  --focus: #e7b96d;
+  --line: #2a3731;
+  --card: #141b18;
+  --bg: #0c1110;
+  --serif: Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(45, 92, 69, 0.22), transparent 50%),
+    var(--bg);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(153, 177, 161, 0.12);
+}
+
+.eyebrow {
+  margin: 0;
+  color: #9cb6a5;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+h1 em {
+  color: var(--green);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}

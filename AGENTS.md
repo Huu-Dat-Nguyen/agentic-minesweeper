@@ -14,14 +14,18 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 | `seed.mjs` | Seeded random (`createRandom`), daily date keys and start squares, share-link `encodeShare`/`decodeShare` with validation. |
 | `stats.mjs` | `threeBV`, `recordResult`, `summarize`, `sanitizeStats`. |
 | `game-engine.test.mjs`, `features.test.mjs` | `node:test` suites for the engine and for solver, seeds, and stats. |
+| `tests/golden.test.mjs`, `tests/fixtures/` | v1 outputs (`golden.json`, from `make-golden.mjs` at `bc67f76`) that seeded boards, daily boards and share links must keep matching. |
 | `app.mjs` | UI: rendering, input (mouse, touch, keyboard), timer, undo history, tools (hint, AI, daily, share, replay, stats, settings), sound, service-worker registration. |
 | `index.html`, `styles.css` | Markup, dialogs, and the dark, viewport-filling responsive layout. |
-| `build.html`, `build.css` | Public "How it was built" timeline page. |
+| `build.html`, `css/build.css` | Public "How it was built" timeline page. Updated at the end of every v2 step. |
+| `css/base.css` | Shared colors, reset, header, focus and reduced motion for every page. |
+| `docs/coding-rules.md` | Snapshot of the author's coding rules that v2 follows. |
+| `report/` | v2 comparison: `baseline-audit.md`, `*-metrics.json` (from `measure.mjs`), `shots.mjs` (headless screenshots), later `rewrite-comparison.md`. |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and app install. Bump `CACHE_NAME` in `sw.js` when its file list changes. |
 | `README.md` | Public write-up: prompt/result table, features, local play, deployment. |
 | `minefield-preview.png`, `docs/images/` | Public README and build-page images. |
 | `.claude/launch.json` | Local preview server (`py -m http.server 8000`). |
-| `log` | Private, gitignored prompt history. |
+| `log` | Private, gitignored prompt history (restarted at v2; the v1 log was lost). |
 | `before-*.png` | Private, gitignored historical screenshots. Never overwrite, delete, or publish. |
 
 ## Features
@@ -70,25 +74,27 @@ node --check .\sw.js
 
 For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desktop/mobile layouts in a browser (serve with `py -m http.server 8000`; modules do not load from `file://`). The service worker serves network-first, but a browser may still hold old files; force-reload when testing. Report what was and was not verified.
 
-## Status (2026-10-12)
+## Status (2026-10-26)
 
-- All 30 tests (16 engine, 14 feature) and the syntax checks pass.
-- The ten-idea expansion below was merged to `main` in PR #1 (`61bf362`) and is live. Four existing bugs were fixed along the way: Undo needed two presses, Custom boards threw an error, the custom panel showed on every level, and the timer started at three digits.
-- The live site was smoke-tested after deploy: new files served, bug fixes, no-guess, hint, share-link reproduction, daily, Watch AI, replay, stats, settings, service-worker cache, and the build page. Not yet checked live: phone layout, sound, and the install prompt.
-- Local `main` matches `origin/main`; the merged feature branch has been deleted.
-- Next: keep docs, tests, and the published site in sync; when the solver or generator changes, note that old share links will produce different boards.
+- v1 (`bc67f76`) is live on `main`: 30 tests pass; phone layout, sound and the install prompt are not yet checked live.
+- v2 work is on branch `feature/v2-rewrite`; plan in the checklist below. Stop after each step, report, and wait for the user's go-ahead.
+- Each step ends with: tests and checks passing, a new timeline entry in `build.html`, a `log` entry, and its box ticked here.
+- Seeded output must keep matching `tests/fixtures/golden.json`; if it can't, stop and ask.
 
-## Improvement checklist
+## v2 checklist (about 1 hour each; database only after the rewrite)
 
-All ten items are done, checked in a browser, reviewed, and merged.
+- [x] S0. Baseline: branch, coding-rules snapshot, golden fixtures, baseline metrics and audit, `before-v2-*.png`, new log, build page on `css/base.css` with a v2 section.
+- [ ] S1. Core grid + engine: `core/grid.mjs` (single home for index math, neighbors, labels, size checks, `isFinished`), `core/engine.mjs`; tests under `tests/`.
+- [ ] S2. Solver, seed, stats, moves: `core/solver.mjs`, `core/seed.mjs`, `core/stats.mjs`, new `core/moves.mjs` (games as seed + move list); golden must match; time `generateBoard`.
+- [ ] S3. Modes + board: `modes.mjs` (Strategy for normal/daily/shared), `ui/board.mjs` (update changed cells only), bare `app.mjs` with basic play.
+- [ ] S4. Input + tools: `ui/input.mjs`, hint, `ui/agent.mjs`, undo, daily, share, one `interrupt()` facade.
+- [ ] S5. Replay, dialogs, sound: `ui/replay.mjs` on moves, `ui/dialogs.mjs`, `ui/sound.mjs`, `data/store.mjs` `LocalStore` reading the existing keys.
+- [ ] S6. CSS + offline: `css/game.css` on `base.css`, merge duplicates, update `sw.js`, remove old files.
+- [ ] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
+- [ ] S8. Supabase schema + adapter: `supabase/schema.sql` with RLS, `data/supabase.mjs`, `CloudStore` (fake-fetch tests). User creates the project.
+- [ ] S9. Account UI + per-player stats against the real project.
+- [ ] S10. Leaderboard + history dialogs, "Accounts and leaderboard" build-page section, final docs and check.
 
-- [x] 1. No-guess mode: boards that can be solved by logic alone (`solver.mjs`, seeded by `seed.mjs`).
-- [x] 2. Hint button: highlight a square the numbers prove safe (or a mine) and explain why; hinted games don't count toward best times.
-- [x] 3. AI autoplayer: watch the solver play step by step with explanations.
-- [x] 4. Daily challenge: same seeded no-guess Intermediate board for everyone each day, with a spoiler-free shareable result.
-- [x] 5. Shareable boards: seed, size, and first square in the URL so others play the same board.
-- [x] 6. Game replay: play or step through a finished game move by move, with mines shown faintly.
-- [x] 7. Stats: games played, win rate, streaks, best and average times, and best 3BV/s per mode (`stats.mjs`).
-- [x] 8. Offline app (PWA): manifest, icons, and a network-first service worker (`sw.js`); still no dependencies.
-- [x] 9. Accessibility options: colorblind-safe numbers, high contrast, synthesized sound, and reduced motion.
-- [x] 10. "How it was built" page (`build.html`): prompt-by-prompt timeline with results and commit links.
+## v1 improvement checklist (done)
+
+All ten v1 ideas were built, checked, and merged in PR #1: no-guess mode, hints, AI autoplayer, daily challenge, shareable boards, replay, stats, offline app, accessibility options, and the build page.
