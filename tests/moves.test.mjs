@@ -107,3 +107,17 @@ test("a no-guess first reveal on a flagged or invalid square is ignored without 
   assert.equal(applyMove(state, { type: "reveal", index: -1, at: 10 }), state);
   assert.ok(performance.now() - began < 50, "should skip the 300 generation attempts");
 });
+
+test("a start square opens at time 0, is recorded for replay, and cannot be undone", () => {
+  const state = startGame({ config: CONFIG, seed: "moves-1", noGuess: true, start: 40 });
+  const expected = generateBoard(createGame(CONFIG), 40, createRandom("moves-1"), { noGuess: true });
+  assert.deepEqual(state.game, expected.game);
+  assert.equal(state.guaranteed, expected.guaranteed);
+  assert.deepEqual(state.history, []);
+  assert.deepEqual(state.moves, [{ type: "reveal", index: 40, at: 0 }]);
+  assert.equal(applyMove(state, { type: "undo", at: 5 }), state);
+
+  const frames = replay(toRecord(state));
+  assert.equal(frames.length, 2);
+  assert.deepEqual(frames[1].game, state.game);
+});
