@@ -92,10 +92,10 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 
 ## Status (2026-10-28)
 
-- `main` (`bc67f76`, v1) is still what the live site serves; nothing from v2 is pushed.
-- Branch `feature/v2-rewrite` holds the finished plan (S0–S10): rewrite under the coding rules (`report/rewrite-comparison.md`) plus optional Supabase accounts, leaderboard and history. 133 tests pass.
+- v2 is live: PR #2 merged into `main` (`16df8e0`) on 2026-10-28 with the finished plan (S0–S10): rewrite under the coding rules (`report/rewrite-comparison.md`) plus optional Supabase accounts, leaderboard and history. 133 tests pass.
+- Live smoke test after the deploy: v2 files served (v1 files 404), daily board identical to v1, leaderboard shows the test account, service worker `minefield-v7` caches 34 files and the site loads offline.
 - Supabase project `zsulmktqcdervnlbbqah`; `supabase/schema.sql` has been run. Keys: only the publishable key, in `config.mjs`. Never add a secret or service_role key.
-- Before merging: pushing `main` deploys. Visitors on v1 may load one stale file from their browser cache for up to ~10 minutes after the deploy (v1's service worker doesn't revalidate); v2's does.
+- Pushing `main` deploys. v2's service worker revalidates every file, so releases can't mix old and new modules.
 - Not tested: real sound, the install prompt, a physical phone; editing/deleting games and changing usernames live (blocked by grants, not exercised).
 - Seeded output must keep matching `tests/fixtures/golden.json`; if it can't, stop and ask.
 
