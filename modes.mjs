@@ -10,7 +10,7 @@ import {
   encodeShare,
   makeSeed,
 } from "./core/seed.mjs";
-import { rate, threeBV } from "./core/stats.mjs";
+import { rate, threeBV, tracksBestTime } from "./core/stats.mjs";
 
 export const READY_MESSAGE = "Choose a square. The first one is on us.";
 const SEEDED_NOTE = "The first square is open and the clock starts on your move.";
@@ -58,11 +58,13 @@ const BOARD_SHARE = {
   },
 };
 
+const presetBestKey = (session) => (tracksBestTime(session.difficulty) ? session.difficulty : null);
+
 // `address` is what the browser bar shows; `shareAddress` is what a share link needs
 // (a normal board only becomes shareable once its first reveal has set `start`).
 export const MODES = {
   normal: {
-    bestKey: (session) => session.difficulty,
+    bestKey: presetBestKey,
     statsKey: (session) => session.difficulty,
     address: () => "",
     shareAddress: boardAddress,
@@ -82,7 +84,7 @@ export const MODES = {
     restart: (session) => session,
   },
   shared: {
-    bestKey: (session) => session.difficulty,
+    bestKey: presetBestKey,
     statsKey: (session) => session.difficulty,
     address: boardAddress,
     shareAddress: boardAddress,

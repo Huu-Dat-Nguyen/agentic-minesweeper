@@ -1,6 +1,6 @@
 // Offline support: serve fresh files when online and fall back to the cache
 // when offline. Bump CACHE_NAME when the file list changes.
-const CACHE_NAME = "minefield-v3";
+const CACHE_NAME = "minefield-v4";
 // Every file the site needs offline. tests/sw.test.mjs checks this list against the disk.
 const APP_FILES = [
   "./",
@@ -11,6 +11,7 @@ const APP_FILES = [
   "css/game.css",
   "app.mjs",
   "modes.mjs",
+  "config.mjs",
   "core/engine.mjs",
   "core/grid.mjs",
   "core/moves.mjs",
@@ -24,7 +25,9 @@ const APP_FILES = [
   "ui/input.mjs",
   "ui/replay.mjs",
   "ui/sound.mjs",
+  "data/cloud.mjs",
   "data/store.mjs",
+  "data/supabase.mjs",
   "manifest.webmanifest",
   "icons/icon.svg",
   "icons/icon-192.png",

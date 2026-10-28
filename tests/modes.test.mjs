@@ -124,3 +124,12 @@ test("restarting a normal board can take the current no-guess setting", () => {
   assert.equal(session.mode.restart(session, true).noGuess, true);
   assert.equal(session.mode.restart(session).noGuess, false);
 });
+
+test("custom boards, normal or shared, keep stats but no best time", () => {
+  const normal = normalSession("custom", { rows: 5, columns: 7, mines: 12 });
+  assert.equal(normal.mode.bestKey(normal), null);
+  assert.equal(normal.mode.statsKey(normal), "custom");
+  const shared = sessionFromShare(decodeShare("r=5&c=7&m=12&seed=abc123&start=3"));
+  assert.equal(shared.difficulty, "custom");
+  assert.equal(shared.mode.bestKey(shared), null);
+});

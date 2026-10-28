@@ -74,3 +74,9 @@ test("a move earns a tone by its result, then by its kind", () => {
   assert.equal(soundFor("flag", { phase: "playing" }), "flag");
   assert.equal(soundFor("chord", { phase: "playing" }), "reveal");
 });
+
+test("the stats dialog shows no best time for custom boards", () => {
+  const entry = { played: 2, won: 1, streak: 1, bestStreak: 1, totalWinSeconds: 30, bestTime: 30, bestRate: 1 };
+  const custom = statsRows({ custom: entry }).find((row) => row.label === "Custom");
+  assert.deepEqual(custom.cells, ["2", "50%", "1", "1", "—", "30s", "1.00"]);
+});

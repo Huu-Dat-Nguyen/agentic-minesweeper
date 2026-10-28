@@ -1,7 +1,7 @@
 // Wiring only: turns UI events into moves and draws the result.
 import { countFlags, DIFFICULTIES, flagsAround } from "./core/engine.mjs";
 import { isFinished, MAX_COLUMNS, MAX_ROWS, positionLabel, sizeError } from "./core/grid.mjs";
-import { applyMove, startGame } from "./core/moves.mjs";
+import { applyMove, startGame, toRecord } from "./core/moves.mjs";
 import { decodeShare } from "./core/seed.mjs";
 import { explainHint, findHint } from "./core/solver.mjs";
 import { rate, threeBV } from "./core/stats.mjs";
@@ -183,6 +183,9 @@ function finishMessage(game, lossMessage) {
     boardValue,
     assisted,
     recorded,
+    record: toRecord(state),
+    dateKey: session.date,
+    start: state.start,
   });
   recorded = true;
   showBest();

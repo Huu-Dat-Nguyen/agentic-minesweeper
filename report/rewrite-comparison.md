@@ -63,7 +63,7 @@ An independent read-only audit checked each v1 finding in [baseline-audit.md](ba
 | Fixed | D2 labels, D3 size check (JS), D5 3BV/s, D6 finished check, D7 URLs, D8 board config, D10 stats labels, H1 storage, H6 double deduce, H7 full redraw, H8 double flag count, L1 unused exports, L2 dead code, L3 kind branches → Strategy, L4 stop sequence → Facade, L5 page script size |
 | Fixed during the final check | D1 index math (last copy), D4 neighbor flag count (now `flagsAround`), D9 selected-button loop |
 | Partly fixed | D11/D12 CSS: shared base and merged rules, but some literal colors remain, and one green (`#88c6a0`) is kept to stay pixel-identical. H3 offline list: test-guarded, but `CACHE_NAME` is still bumped by hand. H4/H5 solver: fewer copies, but `deduce` still restarts its search after each find. |
-| Not fixed | H2: every custom size shares one best time and stats row. Fixing it changes what players see, so it is left for the author to decide. |
+| Decided by the author (2026-10-28) | H2: custom boards of every size shared one best time. Custom boards now keep stats but no best time (`modes.mjs` `tracksBestTime`). |
 
 ### Bugs found and fixed during the rewrite
 | Bug | In v1? | Fix |
@@ -86,5 +86,4 @@ An independent read-only audit checked each v1 finding in [baseline-audit.md](ba
 - **Code written by AI workers:** Sonnet coding workers wrote most v2 code and the main model reviewed it. The audit was a separate read-only pass. It is not a human review.
 
 ## Next steps
-1. Decide H2: give each custom board size its own best time, or keep one shared row.
-2. Merge `feature/v2-rewrite` into `main` when ready; pushing deploys the live site. Then add accounts (S8–S10).
+1. Merge `feature/v2-rewrite` into `main` when ready; pushing deploys the live site. Then add accounts (S8–S10).

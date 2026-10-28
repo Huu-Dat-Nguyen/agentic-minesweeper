@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { LocalStore, sanitizeBestTimes, sanitizeSettings } from "../data/store.mjs";
+import { LocalStore, sanitizeBestTimes, sanitizeOutbox, sanitizeSession, sanitizeSettings } from "../data/store.mjs";
 
 function fakeStorage(initial = {}) {
   const data = { ...initial };
@@ -123,4 +123,41 @@ test("a storage that throws never breaks stats", () => {
   assert.equal(store.bestTime("beginner"), null);
   assert.doesNotThrow(() => store.recordGame(WIN));
   assert.doesNotThrow(() => store.resetStats());
+});
+
+test("a game without a best-time key records stats but never a best time", () => {
+  const storage = fakeStorage();
+  const store = new LocalStore(() => storage);
+  assert.deepEqual(store.recordGame({ ...WIN, statsKey: "custom", bestKey: null }), { counts: true, newBest: false });
+  assert.equal(store.loadStats().custom.won, 1);
+  assert.equal(storage.getItem(BEST), null);
+  assert.equal(store.bestTime(null), null);
+});
+
+const SESSION = { access_token: "a", refresh_token: "r", expires_at: 1900000000, user: { id: "u1", email: "x@y.z", extra: 1 } };
+
+test("a stored session keeps only its tokens, expiry and user id and email", () => {
+  assert.deepEqual(sanitizeSession(SESSION), { ...SESSION, user: { id: "u1", email: "x@y.z" } });
+  assert.deepEqual(sanitizeSession({ ...SESSION, user: { id: "u1" } }).user, { id: "u1" });
+  for (const bad of [null, "x", { ...SESSION, expires_at: "soon" }, { ...SESSION, user: {} }, { ...SESSION, access_token: 1 }]) {
+    assert.equal(sanitizeSession(bad), null);
+  }
+  const { store } = storeWith({});
+  assert.equal(store.loadSession(), null);
+  store.saveSession(SESSION);
+  assert.equal(store.loadSession().user.id, "u1");
+  store.saveSession(null);
+  assert.equal(store.loadSession(), null);
+});
+
+test("the outbox keeps valid game rows, newest 50", () => {
+  const row = (n) => ({ user_id: "player-1", queue_id: `q${n}`, mode: "beginner", won: true, moves: [], seconds: n });
+  const many = Array.from({ length: 60 }, (_, n) => row(n));
+  assert.deepEqual(sanitizeOutbox([row(1), null, { mode: "x" }, 5, row(2)]).map((r) => r.seconds), [1, 2]);
+  assert.equal(sanitizeOutbox(many).length, 50);
+  assert.equal(sanitizeOutbox(many)[0].seconds, 10);
+  assert.deepEqual(sanitizeOutbox("nope"), []);
+  const { store } = storeWith({});
+  store.saveOutbox(many);
+  assert.equal(store.loadOutbox().length, 50);
 });

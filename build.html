@@ -23,7 +23,7 @@
         <h1>How Minefield <em>was built</em></h1>
         <p class="lead">A person wrote short prompts. AI coding agents planned the work, wrote the code, tested it, and kept these notes. Each step below shows what was asked, what changed, and the commit that shipped it.</p>
         <dl class="totals">
-          <div><dt>Prompts</dt><dd>16</dd></div>
+          <div><dt>Prompts</dt><dd>17</dd></div>
           <div><dt>Commits</dt><dd>16</dd></div>
           <div><dt>Dependencies</dt><dd>0</dd></div>
           <div><dt>Build steps</dt><dd>0</dd></div>
@@ -251,7 +251,7 @@
         </li>
 
         <li class="step">
-          <details open>
+          <details>
             <summary>
               <span class="step-date">Oct 26</span>
               <span class="step-title">v2 step 7: check everything and measure the result</span>
@@ -259,6 +259,19 @@
             <div class="step-body">
               <p class="prompt"><span>Prompt</span> Check the rewrite end to end and write the comparison.</p>
               <p><span class="label">Result</span> A separate agent re-read all the new code against the rules without seeing the plan, item by item against the v1 audit. It found six bugs (two inherited from v1) and some leftover duplication; all were fixed and covered by tests. The same daily board opened identically on the live v1 site and the new code, phone layout and offline play were checked, and the before-and-after numbers are summarized below.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Oct 28</span>
+              <span class="step-title">Accounts step 1: a database that only lets players see their own games</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Turn off best times for custom boards, then set up the database for accounts.</p>
+              <p><span class="label">Result</span> Custom boards come in any size, so they now count in stats but keep no best time. For accounts, the agent wrote the database tables and their access rules: a player can read and save only their own games, saved games can't be edited, and other people only ever see usernames and leaderboard times. The key in the page's code is public by design; the access rules are what protect the data. Stats and best times are worked out from the saved games rather than stored twice, using the same rules as the offline game. A game that fails to save waits in the browser, tagged with its player so a shared computer can't mix accounts, and is sent again later. No new dependencies: the connector uses the browser's own <code>fetch</code>.</p>
             </div>
           </details>
         </li>
@@ -276,7 +289,8 @@
         <ul>
           <li><strong>Better:</strong> logic that v1 repeated in several places (board math, labels, size checks, 3BV/s, links, stop-everything steps) now lives in one place each; the 1,102-line page script became 17 small modules; a move on an Expert board repaints 2 squares instead of rebuilding all 480.</li>
           <li><strong>The same:</strong> every seeded, daily and shared board matches v1 exactly, the game is pixel-identical on desktop and phone, and players keep their stats.</li>
-          <li><strong>Not better:</strong> the app code grew 14% (1,841 → 2,107 lines), mostly module wiring and new behavior such as saved move lists; board generation speed is unchanged; custom board sizes still share one best time.</li>
+          <li><strong>Not better:</strong> the app code grew 14% (1,841 → 2,107 lines), mostly module wiring and new behavior such as saved move lists; board generation speed is unchanged.</li>
+          <li><strong>Changed on purpose:</strong> custom boards come in any size, so one best time for all of them meant nothing. They still count in stats but no longer keep a best time.</li>
           <li><strong>Bugs found:</strong> an independent audit of the new code found two v1 bugs (the AI could loop forever, resetting stats could throw) and four new ones, all fixed with tests.</li>
         </ul>
       </section>

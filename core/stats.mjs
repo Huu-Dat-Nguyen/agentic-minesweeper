@@ -97,3 +97,32 @@ export function sanitizeStats(raw) {
   }
   return clean;
 }
+
+// Custom boards come in any size, so one best time for all of them means nothing:
+// they keep stats but no best time.
+export function tracksBestTime(statsKey) {
+  return statsKey !== "custom";
+}
+
+// The best-time key of a saved game row, or null when its mode keeps none.
+function bestKeyOf({ mode, date_key }) {
+  if (!tracksBestTime(mode)) return null;
+  return mode === "daily" ? `daily:${date_key}` : mode;
+}
+
+// Rows are saved games (the `games` table shape), oldest first. Assisted games never count.
+export function statsFromGames(rows) {
+  return rows.reduce(
+    (stats, row) => (row.assisted ? stats : recordResult(stats, row.mode, { won: row.won, seconds: row.seconds, boardValue: row.three_bv })),
+    {},
+  );
+}
+
+export function bestTimesFromGames(rows) {
+  const times = {};
+  for (const row of rows) {
+    const key = bestKeyOf(row);
+    if (row.won && !row.assisted && key !== null && !(times[key] <= row.seconds)) times[key] = row.seconds;
+  }
+  return times;
+}

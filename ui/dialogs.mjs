@@ -1,6 +1,6 @@
 // The stats, settings and share dialogs.
 import { DIFFICULTIES } from "../core/engine.mjs";
-import { summarize } from "../core/stats.mjs";
+import { summarize, tracksBestTime } from "../core/stats.mjs";
 
 const STATS_ROWS = [
   ...Object.entries(DIFFICULTIES).map(([key, { label }]) => [key, label]),
@@ -28,7 +28,7 @@ export function statsRows(stats) {
         formatStat(summary.played === 0 ? null : summary.winRate, "percent"),
         formatStat(summary.streak),
         formatStat(summary.bestStreak),
-        formatStat(summary.bestTime, "time"),
+        formatStat(tracksBestTime(key) ? summary.bestTime : null, "time"),
         formatStat(summary.averageTime, "time"),
         formatStat(summary.bestRate, "rate"),
       ],
