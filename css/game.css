@@ -1037,6 +1037,47 @@ h1 span {
   gap: 8px;
 }
 
+.leaders-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 12px 16px 0;
+}
+
+.leaders-table th:nth-child(2),
+.leaders-table td:nth-child(2) {
+  text-align: left;
+}
+
+.leaders-table tr.is-own > * {
+  background: var(--green-fill);
+  color: var(--green-dark);
+}
+
+.history-title {
+  margin: 8px 16px 0;
+  font-size: 13px;
+}
+
+.history-list {
+  display: grid;
+  max-height: 40vh;
+  margin: 0;
+  padding: 0 16px;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 12px;
+}
+
+.history-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
 .account-name {
   margin: 4px 16px 0;
   overflow-wrap: anywhere;

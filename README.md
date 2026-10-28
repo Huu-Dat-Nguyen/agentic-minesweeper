@@ -29,6 +29,7 @@ The full story, prompt by prompt, is on the in-game **[How it was built](https:/
 | Rewrite the README around agentic coding | Recast the project as a prompt-to-product record with a concise prompt/result log and evolution screenshots. |
 | Execute the full improvement plan | Added custom boards (up to 24 × 40), undo, keyboard chording (C), best times per difficulty, a clamped mine counter, a four-digit timer, and a 16-test suite; pushed to the public repository. |
 | Suggest ten expansions and build them one by one | Added a logic solver powering no-guess boards, hints, and an AI player that explains its moves; a daily challenge and shareable board links; game replay; stats with 3BV/s; offline play; accessibility settings; and a "How it was built" page. Fixed four bugs found along the way. 30 tests. |
+| Add a database login to track players | Optional accounts on Supabase with private, insert-only game records protected by row-level security, a public leaderboard, and replayable game history; stats derived from saved games with the same rules as offline play. Checked live with a real account. Custom boards no longer keep a best time. |
 | Rewrite the code under my coding rules and compare | Split the 1,102-line page script into 17 small modules with each piece of logic in one place; a move now repaints 2 squares instead of 480 (7.7 → 1.3 ms on Expert); 96 tests; every old board link and every screen unchanged; app code 14% larger. See [the comparison](report/rewrite-comparison.md). |
 
 The images compare an early playable build with the current release. Historical full-size backups stay local; the README uses a cropped copy of the early screenshot.
@@ -47,10 +48,14 @@ The images compare an early playable build with the current release. Historical 
 - **Replay**: step through a finished game move by move, with mines shown faintly.
 - **Stats**: games played, win rate, streaks, best and average times, and best 3BV/s per mode. Games with hints, the AI, or an undo after a loss don't count.
 - **Settings**: colorblind-safe numbers, high contrast, sound effects, and reduced motion.
+- **Accounts** (optional): sign in to save games, stats and best times to your account; signed out, everything stays in the browser.
+- **Leaderboard**: the fastest unassisted wins per difficulty and for today's daily board.
+- **History**: your recent games, each replayable move by move.
+- Custom boards count in stats but keep no best time.
 - Works offline and can be installed as an app.
 - Touch-friendly reveal/flag controls, keyboard navigation, and accessible announcements.
 - Responsive dark layout; large boards scroll within the game area.
-- No framework, dependencies, backend, or build step.
+- No framework, dependencies, or build step; accounts use a Supabase database through plain `fetch` (`supabase/schema.sql`).
 
 ## Play and test locally
 

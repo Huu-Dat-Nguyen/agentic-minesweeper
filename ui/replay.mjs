@@ -1,4 +1,4 @@
-// Replays a finished game from its move list (core/moves.mjs); it keeps no timeline of its own.
+// Replays a game from its move list (core/moves.mjs): the finished current game, or frames of a saved one.
 import { isFinished } from "../core/grid.mjs";
 import { replay as framesOf, toRecord } from "../core/moves.mjs";
 import { formatTime } from "./clock.mjs";
@@ -8,10 +8,12 @@ const MAX_GAP_MS = 1600;
 
 // A seeded (daily or shared) game starts with its first square already open, so
 // its replay begins at that board instead of the empty one.
-export function replayFrames(state, seeded) {
-  const frames = framesOf(toRecord(state));
+export function framesFromRecord(record, seeded) {
+  const frames = framesOf(record);
   return seeded ? frames.slice(1) : frames;
 }
+
+export const replayFrames = (state, seeded) => framesFromRecord(toRecord(state), seeded);
 
 // Only a finished game with at least one move to watch.
 export function canReplay(state, seeded) {
@@ -82,10 +84,10 @@ export function createReplay({ button, getState, isSeeded, say, onChange }) {
     showFrame();
   }
 
-  function start() {
-    const state = getState();
-    if (!canReplay(state, isSeeded())) return;
-    run = { frames: replayFrames(state, isSeeded()), index: 0, playing: false, timer: null };
+  // Opens the player on a list of frames (the current game or a saved one) and starts playing.
+  function open(frames) {
+    stop();
+    run = { frames, index: 0, playing: false, timer: null };
     slider.max = String(lastIndex());
     controls.hidden = true;
     bar.hidden = false;
@@ -93,6 +95,11 @@ export function createReplay({ button, getState, isSeeded, say, onChange }) {
     showFrame();
     play();
     playButton.focus();
+  }
+
+  function start() {
+    const state = getState();
+    if (canReplay(state, isSeeded())) open(replayFrames(state, isSeeded()));
   }
 
   // `announce` is for the player closing it; anything else that interrupts leaves the redraw and message to the caller.
@@ -124,6 +131,7 @@ export function createReplay({ button, getState, isSeeded, say, onChange }) {
 
   return {
     stop,
+    watch: open,
     isActive: () => run !== null,
     game: () => run?.frames[run.index].game ?? null,
     // Enables the button only when there is something to watch.

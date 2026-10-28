@@ -18,8 +18,8 @@ export function checkAccountForm({ mode, email, password, username = "" }) {
 
 // `api` is the createSupabase adapter. `getName()` is the signed-in username, or null while unknown.
 // `onSession(signedIn)` runs after a sign-in, sign-up with a session, or sign-out (the app switches stores).
-// `onOpen()` runs before the dialog opens.
-export function createAccount({ api, getName, onOpen, onSession }) {
+// `onOpen()` runs before the dialog opens. `history.show()` redraws "Your games" while signed in.
+export function createAccount({ api, getName, history, onOpen, onSession }) {
   const dialog = document.querySelector("#account-dialog");
   const title = document.querySelector("#account-title");
   const form = document.querySelector("#account-form");
@@ -62,6 +62,7 @@ export function createAccount({ api, getName, onOpen, onSession }) {
     signedIn.hidden = user === null;
     nameElement.textContent = name ?? "";
     title.textContent = user ? "Your account" : mode === "signUp" ? "Create account" : "Sign in";
+    if (user) history.show();
   }
 
   function setBusy(busy) {

@@ -15,7 +15,9 @@ import { createAgent } from "./ui/agent.mjs";
 import { createBoard } from "./ui/board.mjs";
 import { createClock, formatTime } from "./ui/clock.mjs";
 import { createDialogs } from "./ui/dialogs.mjs";
+import { createHistory } from "./ui/history.mjs";
 import { createInput } from "./ui/input.mjs";
+import { createLeaderboard } from "./ui/leaderboard.mjs";
 import { createReplay } from "./ui/replay.mjs";
 import { createSound, soundFor } from "./ui/sound.mjs";
 
@@ -139,7 +141,9 @@ function showNoGuess() {
 function render(focus = false) {
   const frame = replay.game();
   const game = frame ?? state.game;
-  board.render(game, { hint: frame ? null : hint, ghost: frame !== null, active: activeIndex, focus });
+  // A saved game can have a smaller board, so keep the focus square on it.
+  const active = Math.min(activeIndex, game.board.length - 1);
+  board.render(game, { hint: frame ? null : hint, ghost: frame !== null, active, focus });
   replay.sync();
   const remaining = Math.max(0, game.mineCount - countFlags(game));
   mineCountElement.textContent = String(remaining).padStart(3, "0");
@@ -419,9 +423,18 @@ async function chooseStore() {
   account.refresh();
 }
 
+createLeaderboard({ api, getName: () => cloud.username, onOpen: () => agent.stop() });
+const history = createHistory({
+  getGames: () => cloud.games(),
+  onReplay(frames) {
+    interrupt();
+    replay.watch(frames);
+  },
+});
 const account = createAccount({
   api,
   getName: () => cloud.username,
+  history,
   onOpen: () => agent.stop(),
   onSession: chooseStore,
 });

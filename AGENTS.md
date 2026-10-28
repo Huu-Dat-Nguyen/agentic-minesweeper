@@ -1,6 +1,6 @@
 # Agent Instructions
 
-Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no dependencies, backend, or build step. It doubles as a showcase of agentic coding: human prompts set direction, agents implement and verify.
+Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no dependencies or build step; optional accounts use a Supabase database (`supabase/schema.sql`) through plain `fetch`. It doubles as a showcase of agentic coding: human prompts set direction, agents implement and verify.
 
 - Live site: https://huu-dat-nguyen.github.io/agentic-minesweeper/
 - Repository: https://github.com/Huu-Dat-Nguyen/agentic-minesweeper (public; GitHub Pages deploys `main` from the repository root on every push)
@@ -17,6 +17,8 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 | `core/moves.mjs` | A game is seed + moves: `startGame`, `applyMove` (the one path for play and replay), `toRecord`, `replay`. |
 | `modes.mjs` | Strategy objects for normal, daily and shared games (keys, links, labels, share texts, restart) and session factories. |
 | `ui/*.mjs` | `board` (repaints changed cells only), `input` (events to intents, one guard spot), `agent`, `replay`, `dialogs` (stats, settings, share), `account` (header button, sign-in/create-account dialog, form checks), `sound`, `clock`. |
+| `ui/leaderboard.mjs` | Leaders dialog: `leaderRows` formatting, tabs, loads `top_times` (works signed out). |
+| `ui/history.mjs` | "Your games" in the account dialog: `recordFromRow`, `historyRows`, a Replay button per saved game (plays through `ui/replay.mjs` `watch`). |
 | `data/store.mjs` | `LocalStore`: the only code touching `localStorage` (see the data map below). |
 | `config.mjs` | Supabase URL and publishable key (public by design; RLS protects the data). Never add a secret or service_role key. |
 | `data/supabase.mjs` | `createSupabase`: Adapter over Supabase Auth and REST with plain fetch (sign-up/in/out, token refresh, profile, games, `top_times`). Throws readable errors. |
@@ -52,6 +54,7 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
   - `LocalStore.recordGame` (called by `app.mjs` `finishMessage`, first unassisted finish only) -> `minefield.stats.v1` (key per `statsKey`, shape from `core/stats.mjs`) -> `loadStats` (stats dialog in `ui/dialogs.mjs`, `recordGame`). `resetStats` clears it.
   - `LocalStore.recordGame` (wins that beat the stored time) -> `minefield.bestTimes.v1` (whole seconds keyed by mode `bestKey`, daily times as `daily:DATE`; invalid values dropped on load) -> `bestTime` (BEST display in `app.mjs` `showBest`), `recordGame`. Reset stats keeps it.
   - Store in use (`app.mjs` `chooseStore`): `LocalStore` when signed out, while the account loads, or if loading fails; `CloudStore` once signed in and loaded. Local stats are never merged into an account.
+  - Read-only, nothing stored: `ui/leaderboard.mjs` reads the public `top_times` call (`data/supabase.mjs` `topTimes`); `ui/history.mjs` reads `CloudStore.games()` rows.
   - `ui/dialogs.mjs` settings dialog (colorblind, contrast, sound, reduceMotion) and `app.mjs` no-guess toggle -> `minefield.settings.v1` (via `saveSettings`, which merges) -> `loadSettings` (`ui/dialogs.mjs` at start, `app.mjs` at start).
   - `LocalStore.saveSession` (`data/supabase.mjs`, on sign-in, token refresh and sign-out) -> `minefield.session.v1` (tokens, `expires_at` seconds, user id/email) -> `createSupabase` at start via `loadSession`.
   - `LocalStore.saveOutbox` (`CloudStore.recordGame` appends; `flush` removes after a successful save) -> `minefield.outbox.v1` (newest 50 game rows not yet saved) -> `CloudStore.flush`/`load`.
@@ -87,11 +90,13 @@ Get-ChildItem *.mjs, core\*.mjs, ui\*.mjs, data\*.mjs, sw.js | ForEach-Object { 
 
 For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desktop/mobile layouts in a browser (serve with `py -m http.server 8000`; modules do not load from `file://`). The service worker serves network-first, but a browser may still hold old files; force-reload when testing. Report what was and was not verified.
 
-## Status (2026-10-26)
+## Status (2026-10-28)
 
-- v1 (`bc67f76`) is live on `main`: 30 tests pass; phone layout, sound and the install prompt are not yet checked live.
-- v2 rewrite (S0–S7) is done on branch `feature/v2-rewrite`, not merged: 99 tests pass, seeded boards match v1, game screens pixel-identical; results in `report/rewrite-comparison.md`. H2 decided 2026-10-28: custom boards have no best time. Plan in the checklist below. Stop after each step, report, and wait for the user's go-ahead.
-- Each step ends with: tests and checks passing, a new timeline entry in `build.html`, a `log` entry, and its box ticked here.
+- `main` (`bc67f76`, v1) is still what the live site serves; nothing from v2 is pushed.
+- Branch `feature/v2-rewrite` holds the finished plan (S0–S10): rewrite under the coding rules (`report/rewrite-comparison.md`) plus optional Supabase accounts, leaderboard and history. 133 tests pass.
+- Supabase project `zsulmktqcdervnlbbqah`; `supabase/schema.sql` has been run. Keys: only the publishable key, in `config.mjs`. Never add a secret or service_role key.
+- Before merging: pushing `main` deploys. Visitors on v1 may load one stale file from their browser cache for up to ~10 minutes after the deploy (v1's service worker doesn't revalidate); v2's does.
+- Not tested: real sound, the install prompt, a physical phone; editing/deleting games and changing usernames live (blocked by grants, not exercised).
 - Seeded output must keep matching `tests/fixtures/golden.json`; if it can't, stop and ask.
 
 ## v2 checklist (about 1 hour each; database only after the rewrite)
@@ -106,7 +111,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 - [x] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
 - [x] S8. Supabase schema + adapter: `supabase/schema.sql` with RLS, `data/supabase.mjs`, `CloudStore` (fake-fetch tests). Project `zsulmktqcdervnlbbqah` (publishable key in `config.mjs`); schema run by the user 2026-10-28. Checked live signed out: leaderboard and usernames readable, games unreadable and unsaveable, profiles not editable, trigger function not callable. Signed-in checks need a user-made account (S9).
 - [x] S9. Account UI + per-player stats against the real project. Checked live 2026-10-28 with the user's account (`nhd`): games saved, stats/best loaded, leaderboard shows the win, reads return only own games, saving under another user_id refused by RLS. Not live-tested (blocked as destructive; enforced by grants): editing/deleting games, changing the username. Known limit: other open tabs show the old sign-in state until reloaded.
-- [ ] S10. Leaderboard + history dialogs, "Accounts and leaderboard" build-page section, final docs and check.
+- [x] S10. Leaderboard + history dialogs, "Accounts and leaderboard" build-page section, final docs and check. Checked live 2026-10-28 with the user's account: history lists both games, the saved win replays to the same finished board, leaderboard highlights the own row; signed out in headless Chrome at 375 px. sw.js now revalidates (`cache: "no-cache"`, install with `reload`) after a stale-module mix was seen.
 
 ## v1 improvement checklist (done)
 

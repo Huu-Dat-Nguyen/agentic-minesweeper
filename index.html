@@ -110,6 +110,9 @@
               <button class="tool-button" id="replay-button" type="button" aria-label="Replay this game" title="Watch the finished game move by move" disabled>
                 <span class="tool-icon" aria-hidden="true">⟲</span><span class="tool-text">Replay</span>
               </button>
+              <button class="tool-button" id="leaders-button" type="button" aria-label="Leaderboard" title="Fastest unassisted wins">
+                <span class="tool-icon" aria-hidden="true">♛</span><span class="tool-text">Leaders</span>
+              </button>
               <button class="tool-button" id="stats-button" type="button" aria-label="Stats" title="Games played, win rate, streaks, and speed">
                 <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-text">Stats</span>
               </button>
@@ -189,6 +192,34 @@
       </div>
     </dialog>
 
+    <dialog class="panel panel-wide" id="leaders-dialog" aria-labelledby="leaders-title">
+      <div class="panel-head">
+        <h2 id="leaders-title">Leaderboard</h2>
+        <form method="dialog"><button class="panel-close" type="submit" aria-label="Close">×</button></form>
+      </div>
+      <div class="leaders-tabs" role="group" aria-label="Leaderboard mode">
+        <button class="tool-button" type="button" data-leaders="beginner" aria-pressed="true">Beginner</button>
+        <button class="tool-button" type="button" data-leaders="intermediate" aria-pressed="false">Intermediate</button>
+        <button class="tool-button" type="button" data-leaders="expert" aria-pressed="false">Expert</button>
+        <button class="tool-button" type="button" data-leaders="daily" aria-pressed="false">Daily</button>
+      </div>
+      <div class="stats-wrap" id="leaders-wrap" hidden>
+        <table class="stats-table leaders-table">
+          <thead>
+            <tr>
+              <th scope="col">Rank</th>
+              <th scope="col">Player</th>
+              <th scope="col">Time (s)</th>
+              <th scope="col"><abbr title="Board difficulty (3BV) cleared per second">3BV/s</abbr></th>
+            </tr>
+          </thead>
+          <tbody id="leaders-body"></tbody>
+        </table>
+      </div>
+      <p class="panel-note" id="leaders-status" role="status"></p>
+      <p class="panel-note">Only unassisted wins count. Times are sent by players' browsers and are not verified.</p>
+    </dialog>
+
     <dialog class="panel" id="account-dialog" aria-labelledby="account-title">
       <div class="panel-head">
         <h2 id="account-title">Sign in</h2>
@@ -219,6 +250,9 @@
         <div class="panel-actions">
           <button class="panel-action" id="account-sign-out" type="button">Sign out</button>
         </div>
+        <h3 class="history-title">Your games</h3>
+        <p class="panel-note" id="history-message" role="status"></p>
+        <ul class="history-list" id="history-list"></ul>
       </div>
       <p class="panel-note">Stats already saved in this browser stay here; they are not added to your account.</p>
     </dialog>
