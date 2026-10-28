@@ -126,6 +126,28 @@ button {
   text-decoration: none;
 }
 
+.header-links {
+  min-width: 0;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.account-button {
+  max-width: 120px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-button:hover {
+  color: var(--bright);
+}
+
 a.header-note:hover {
   color: var(--bright);
 }
@@ -964,6 +986,67 @@ h1 span {
   padding: 7px 16px;
 }
 
+.panel-action.is-quiet {
+  border-color: var(--edge-soft);
+  background: none;
+  color: var(--label);
+}
+
+.account-form {
+  display: grid;
+  gap: 10px;
+  padding: 4px 16px 0;
+}
+
+.account-field {
+  display: grid;
+  gap: 4px;
+}
+
+.account-field[hidden],
+.account-signed-in[hidden],
+.account-form[hidden] {
+  display: none;
+}
+
+.account-input {
+  padding: 8px 10px;
+  border: 1px solid var(--edge-soft);
+  border-radius: 8px;
+  background: var(--well);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.account-message {
+  min-height: 1.5em;
+  margin: 0;
+  color: #ffb3a6;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.account-message.is-info {
+  color: var(--green);
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account-name {
+  margin: 4px 16px 0;
+  overflow-wrap: anywhere;
+}
+
+.panel-action:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .panel-action.is-danger {
   border-color: var(--danger-edge);
   background: #3a2423;
@@ -984,6 +1067,14 @@ h1 span {
 
   .header-note {
     font-size: 9px;
+  }
+
+  .header-links {
+    gap: 8px;
+  }
+
+  .account-button {
+    max-width: 84px;
   }
 
   .game-main {
@@ -1129,6 +1220,10 @@ h1 span {
   .header-note {
     max-width: 132px;
     font-size: 8px;
+  }
+
+  .account-button {
+    max-width: 60px;
   }
 
   .tool-text {

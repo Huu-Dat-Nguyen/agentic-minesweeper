@@ -1,6 +1,7 @@
 # Keep private prompt history and historical screenshots out of the public repository.
 /log
 /before-*.png
+/after-*.png
 
 # Editor and operating-system files.
 .DS_Store

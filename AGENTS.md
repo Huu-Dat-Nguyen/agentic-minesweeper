@@ -16,7 +16,7 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 | `core/stats.mjs` | `threeBV`, `rate`, `recordResult`, `summarize`, `sanitizeStats`. |
 | `core/moves.mjs` | A game is seed + moves: `startGame`, `applyMove` (the one path for play and replay), `toRecord`, `replay`. |
 | `modes.mjs` | Strategy objects for normal, daily and shared games (keys, links, labels, share texts, restart) and session factories. |
-| `ui/*.mjs` | `board` (repaints changed cells only), `input` (events to intents, one guard spot), `agent`, `replay`, `dialogs` (stats, settings, share), `sound`, `clock`. |
+| `ui/*.mjs` | `board` (repaints changed cells only), `input` (events to intents, one guard spot), `agent`, `replay`, `dialogs` (stats, settings, share), `account` (header button, sign-in/create-account dialog, form checks), `sound`, `clock`. |
 | `data/store.mjs` | `LocalStore`: the only code touching `localStorage` (see the data map below). |
 | `config.mjs` | Supabase URL and publishable key (public by design; RLS protects the data). Never add a secret or service_role key. |
 | `data/supabase.mjs` | `createSupabase`: Adapter over Supabase Auth and REST with plain fetch (sign-up/in/out, token refresh, profile, games, `top_times`). Throws readable errors. |
@@ -51,6 +51,7 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 - Stored in `localStorage` (writer -> key -> readers), all through `data/store.mjs` `LocalStore`, which is the only code that touches these keys:
   - `LocalStore.recordGame` (called by `app.mjs` `finishMessage`, first unassisted finish only) -> `minefield.stats.v1` (key per `statsKey`, shape from `core/stats.mjs`) -> `loadStats` (stats dialog in `ui/dialogs.mjs`, `recordGame`). `resetStats` clears it.
   - `LocalStore.recordGame` (wins that beat the stored time) -> `minefield.bestTimes.v1` (whole seconds keyed by mode `bestKey`, daily times as `daily:DATE`; invalid values dropped on load) -> `bestTime` (BEST display in `app.mjs` `showBest`), `recordGame`. Reset stats keeps it.
+  - Store in use (`app.mjs` `chooseStore`): `LocalStore` when signed out, while the account loads, or if loading fails; `CloudStore` once signed in and loaded. Local stats are never merged into an account.
   - `ui/dialogs.mjs` settings dialog (colorblind, contrast, sound, reduceMotion) and `app.mjs` no-guess toggle -> `minefield.settings.v1` (via `saveSettings`, which merges) -> `loadSettings` (`ui/dialogs.mjs` at start, `app.mjs` at start).
   - `LocalStore.saveSession` (`data/supabase.mjs`, on sign-in, token refresh and sign-out) -> `minefield.session.v1` (tokens, `expires_at` seconds, user id/email) -> `createSupabase` at start via `loadSession`.
   - `LocalStore.saveOutbox` (`CloudStore.recordGame` appends; `flush` removes after a successful save) -> `minefield.outbox.v1` (newest 50 game rows not yet saved) -> `CloudStore.flush`/`load`.
@@ -104,7 +105,7 @@ For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desk
 - [x] S6. CSS + offline: `css/game.css` on `base.css`, merge duplicates, update `sw.js`, remove old files.
 - [x] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
 - [x] S8. Supabase schema + adapter: `supabase/schema.sql` with RLS, `data/supabase.mjs`, `CloudStore` (fake-fetch tests). Project `zsulmktqcdervnlbbqah` (publishable key in `config.mjs`); schema run by the user 2026-10-28. Checked live signed out: leaderboard and usernames readable, games unreadable and unsaveable, profiles not editable, trigger function not callable. Signed-in checks need a user-made account (S9).
-- [ ] S9. Account UI + per-player stats against the real project.
+- [x] S9. Account UI + per-player stats against the real project. Checked live 2026-10-28 with the user's account (`nhd`): games saved, stats/best loaded, leaderboard shows the win, reads return only own games, saving under another user_id refused by RLS. Not live-tested (blocked as destructive; enforced by grants): editing/deleting games, changing the username. Known limit: other open tabs show the old sign-in state until reloaded.
 - [ ] S10. Leaderboard + history dialogs, "Accounts and leaderboard" build-page section, final docs and check.
 
 ## v1 improvement checklist (done)

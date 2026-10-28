@@ -56,6 +56,7 @@ test("best times skip assisted and custom games and key daily games by date", ()
 
 test("recordGame answers at once, caches the row and sends it", async () => {
   const { store, sent } = setup();
+  await store.load();
   assert.deepEqual(store.recordGame(GAME), { counts: true, newBest: true });
   assert.equal(store.bestTime("beginner"), 40);
   assert.equal(store.loadStats().beginner.won, 1);
@@ -68,6 +69,7 @@ test("recordGame answers at once, caches the row and sends it", async () => {
 
 test("assisted games are saved for history but never count; recorded ones are ignored", async () => {
   const { store, sent } = setup();
+  await store.load();
   assert.deepEqual(store.recordGame({ ...GAME, assisted: true }), { counts: false, newBest: false });
   assert.deepEqual(store.recordGame({ ...GAME, recorded: true }), { counts: false, newBest: false });
   await tick();
@@ -79,6 +81,7 @@ test("assisted games are saved for history but never count; recorded ones are ig
 
 test("a failed save stays in the outbox and flush resends it oldest first", async () => {
   const { store, local, api, sent } = setup({ failSave: true });
+  await store.load();
   store.recordGame(GAME);
   store.recordGame({ ...GAME, seconds: 30 });
   await tick();
@@ -130,4 +133,32 @@ test("a queued game is only sent, counted or shown for the player who played it"
   await tick();
   assert.deepEqual(sent.map((row) => [row.user_id, row.seconds]), [["player-2", 25]]);
   assert.deepEqual(local.loadOutbox().map((row) => row.user_id), ["player-1"]);
+});
+
+test("load keeps the profile username for the account button", async () => {
+  const { store } = setup({ profile: { username: "mina", stats_reset_at: null } });
+  assert.equal(store.username, null);
+  await store.load();
+  assert.equal(store.username, "mina");
+});
+
+test("a game finished after the login expired waits for its player instead of being lost", async () => {
+  const { store, api, local, sent } = setup();
+  await store.load();
+  api.user = () => null;
+  api.saveGame = async () => { throw new Error("Sign in first."); };
+  store.recordGame(GAME);
+  await tick();
+  assert.deepEqual(local.loadOutbox().map((row) => row.user_id), ["player-1"]);
+  assert.equal(sent.length, 0);
+});
+
+test("forget clears the previous player's cache", async () => {
+  const { store } = setup({ games: [rowOf(GAME)], profile: { username: "ada", stats_reset_at: null } });
+  await store.load();
+  assert.equal(store.username, "ada");
+  store.forget();
+  assert.equal(store.username, null);
+  assert.deepEqual(store.games(), []);
+  assert.equal(store.bestTime("beginner"), null);
 });

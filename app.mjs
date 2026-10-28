@@ -5,8 +5,12 @@ import { applyMove, startGame, toRecord } from "./core/moves.mjs";
 import { decodeShare } from "./core/seed.mjs";
 import { explainHint, findHint } from "./core/solver.mjs";
 import { rate, threeBV } from "./core/stats.mjs";
+import { SUPABASE } from "./config.mjs";
+import { CloudStore } from "./data/cloud.mjs";
+import { createSupabase } from "./data/supabase.mjs";
 import { LocalStore } from "./data/store.mjs";
 import { dailySession, MODES, normalSession, READY_MESSAGE, sessionFromShare } from "./modes.mjs";
+import { createAccount } from "./ui/account.mjs";
 import { createAgent } from "./ui/agent.mjs";
 import { createBoard } from "./ui/board.mjs";
 import { createClock, formatTime } from "./ui/clock.mjs";
@@ -47,17 +51,26 @@ const FACES = {
 };
 
 const board = createBoard(boardElement);
-const store = new LocalStore(() => window.localStorage);
+// The store in use: `local` when signed out (or the account could not load), `cloud` when signed in.
+const local = new LocalStore(() => window.localStorage);
+const api = createSupabase({
+  ...SUPABASE,
+  fetch: (...args) => fetch(...args),
+  session: { load: () => local.loadSession(), save: (saved) => local.saveSession(saved) },
+});
+const cloud = new CloudStore({ api, local });
+let store = local;
 const clock = createClock(timerElement);
 const sound = createSound(() => dialogs.setting("sound"));
 const dialogs = createDialogs({
-  store,
+  getStore: () => store,
+  getWhere: () => (store === cloud ? "your account" : "this browser"),
   onOpen: () => agent.stop(),
   onSetting(key, value) {
     if (key === "sound" && value) sound.play("flag");
   },
 });
-let settings = { noGuess: false, ...store.loadSettings() };
+let settings = { noGuess: false, ...local.loadSettings() };
 let session;
 let state;
 let assisted = false;
@@ -389,8 +402,36 @@ function startFromAddress() {
   if (search) messageElement.textContent = "That board link was not valid, so here is a fresh game.";
 }
 
+// Picks the store for whoever is signed in. Until the account loads, and if it cannot,
+// games are saved in this browser.
+async function chooseStore() {
+  store = local;
+  cloud.forget();
+  if (api.user()) {
+    try {
+      await cloud.load();
+      store = cloud;
+    } catch {
+      messageElement.textContent = "Couldn't reach your account, so this game is saved in this browser.";
+    }
+  }
+  showBest();
+  account.refresh();
+}
+
+const account = createAccount({
+  api,
+  getName: () => cloud.username,
+  onOpen: () => agent.stop(),
+  onSession: chooseStore,
+});
+window.addEventListener("online", () => {
+  if (store === cloud) cloud.flush();
+});
+
 showNoGuess();
 startFromAddress();
+chooseStore();
 
 if ("serviceWorker" in navigator && window.location.protocol.startsWith("http")) {
   window.addEventListener("load", () => {

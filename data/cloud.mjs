@@ -29,6 +29,8 @@ export class CloudStore {
     this.local = local;
     this.rows = [];
     this.resetAt = null;
+    this.username = null;
+    this.userId = null;
     this.stats = {};
     this.best = {};
     this.flushing = null;
@@ -52,14 +54,27 @@ export class CloudStore {
   // The signed-in player's games still waiting in the outbox. Several players can share
   // a browser, so each queued row carries its owner's user_id (RLS checks it on save).
   ownQueued() {
-    const id = this.api.user()?.id;
-    return this.local.loadOutbox().filter((row) => row.user_id === id);
+    return this.local.loadOutbox().filter((row) => row.user_id === this.userId);
+  }
+
+  // Drops everything cached for the previous player (after sign-out, or before loading another).
+  forget() {
+    this.rows = [];
+    this.resetAt = null;
+    this.username = null;
+    this.userId = null;
+    this.derive();
   }
 
   // Fetches the profile and games, adds this player's games still waiting in the outbox, then retries those.
+  // Games are tagged with the player loaded here, so a game finished after the login
+  // expires still waits in the outbox for that player instead of being lost.
   async load() {
+    this.forget();
+    this.userId = this.api.user()?.id ?? null;
     const [profile, rows] = await Promise.all([this.api.profile(), this.api.games()]);
     this.resetAt = profile?.stats_reset_at ?? null;
+    this.username = profile?.username ?? null;
     this.rows = [...rows, ...this.ownQueued()];
     this.derive();
     await this.flush();
@@ -114,7 +129,7 @@ export class CloudStore {
     const newBest = counts && won && bestKey !== null && !(this.best[bestKey] <= seconds);
     const row = {
       ...gameRow(details),
-      user_id: this.api.user()?.id,
+      user_id: this.userId,
       queue_id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
     };

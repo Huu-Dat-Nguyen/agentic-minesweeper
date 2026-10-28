@@ -23,7 +23,10 @@
           <span class="brand-mark" aria-hidden="true"><span></span></span>
           <span class="brand-name">minefield<span class="brand-period">.</span></span>
         </a>
-        <a class="header-note" href="build.html"><span class="live-dot" aria-hidden="true"></span> How it was built →</a>
+        <div class="header-links">
+          <button class="header-note account-button" id="account-button" type="button" aria-haspopup="dialog">Sign in</button>
+          <a class="header-note" href="build.html"><span class="live-dot" aria-hidden="true"></span> How it was built →</a>
+        </div>
       </header>
 
       <main class="game-main">
@@ -180,10 +183,44 @@
           <tbody id="stats-body"></tbody>
         </table>
       </div>
-      <p class="panel-note">Stats stay in this browser. Games with hints, the AI, or an undo after a loss don't count.</p>
+      <p class="panel-note"><span id="stats-where">Stats stay in this browser.</span> Games with hints, the AI, or an undo after a loss don't count.</p>
       <div class="panel-actions">
         <button class="panel-action is-danger" id="reset-stats" type="button">Reset stats</button>
       </div>
+    </dialog>
+
+    <dialog class="panel" id="account-dialog" aria-labelledby="account-title">
+      <div class="panel-head">
+        <h2 id="account-title">Sign in</h2>
+        <form method="dialog"><button class="panel-close" type="submit" aria-label="Close">×</button></form>
+      </div>
+      <form class="account-form" id="account-form" novalidate>
+        <label class="account-field">
+          <span class="custom-label">EMAIL</span>
+          <input class="account-input" id="account-email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false">
+        </label>
+        <label class="account-field">
+          <span class="custom-label">PASSWORD</span>
+          <input class="account-input" id="account-password" type="password" autocomplete="current-password" minlength="6">
+        </label>
+        <label class="account-field" id="account-username-field" hidden>
+          <span class="custom-label">USERNAME</span>
+          <input class="account-input" id="account-username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20">
+        </label>
+        <p class="account-message" id="account-message" role="alert"></p>
+        <div class="account-actions">
+          <button class="panel-action" id="account-submit" type="submit">Sign in</button>
+          <button class="panel-action is-quiet" id="account-toggle" type="button">Create account</button>
+        </div>
+      </form>
+      <div class="account-signed-in" id="account-signed-in" hidden>
+        <p class="account-name">Signed in as <strong id="account-name"></strong></p>
+        <p class="panel-note">Your games and stats are saved to your account.</p>
+        <div class="panel-actions">
+          <button class="panel-action" id="account-sign-out" type="button">Sign out</button>
+        </div>
+      </div>
+      <p class="panel-note">Stats already saved in this browser stay here; they are not added to your account.</p>
     </dialog>
 
     <dialog class="panel" id="settings-dialog" aria-labelledby="settings-title">

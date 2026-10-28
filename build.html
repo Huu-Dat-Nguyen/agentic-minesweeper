@@ -23,7 +23,7 @@
         <h1>How Minefield <em>was built</em></h1>
         <p class="lead">A person wrote short prompts. AI coding agents planned the work, wrote the code, tested it, and kept these notes. Each step below shows what was asked, what changed, and the commit that shipped it.</p>
         <dl class="totals">
-          <div><dt>Prompts</dt><dd>17</dd></div>
+          <div><dt>Prompts</dt><dd>18</dd></div>
           <div><dt>Commits</dt><dd>16</dd></div>
           <div><dt>Dependencies</dt><dd>0</dd></div>
           <div><dt>Build steps</dt><dd>0</dd></div>
@@ -264,7 +264,7 @@
         </li>
 
         <li class="step">
-          <details open>
+          <details>
             <summary>
               <span class="step-date">Oct 28</span>
               <span class="step-title">Accounts step 1: a database that only lets players see their own games</span>
@@ -272,6 +272,19 @@
             <div class="step-body">
               <p class="prompt"><span>Prompt</span> Turn off best times for custom boards, then set up the database for accounts.</p>
               <p><span class="label">Result</span> Custom boards come in any size, so they now count in stats but keep no best time. For accounts, the agent wrote the database tables and their access rules: a player can read and save only their own games, saved games can't be edited, and other people only ever see usernames and leaderboard times. The key in the page's code is public by design; the access rules are what protect the data. Stats and best times are worked out from the saved games rather than stored twice, using the same rules as the offline game. A game that fails to save waits in the browser, tagged with its player so a shared computer can't mix accounts, and is sent again later. No new dependencies: the connector uses the browser's own <code>fetch</code>.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Oct 28</span>
+              <span class="step-title">Accounts step 2: sign in and keep your games</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Add sign-up, sign-in and per-player stats.</p>
+              <p><span class="label">Result</span> A Sign in button in the header opens an account dialog that checks the form before sending anything. Signed out, the game works exactly as before and keeps everything in the browser; signed in, finished games and stats go to the player's account, and if the account can't be reached the game says so and keeps saving locally. The author created the first real account and won a game: it reached the database, stats and the best time loaded from it, and it appeared on the leaderboard. Checked with that account, the database returned only the player's own games and refused a game saved under someone else's name. The agent never saw the password: it was typed by the author, and the checks read only non-secret fields.</p>
             </div>
           </details>
         </li>

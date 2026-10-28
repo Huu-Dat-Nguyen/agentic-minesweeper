@@ -43,13 +43,14 @@ const SETTING_INPUTS = {
   reduceMotion: "#setting-motion",
 };
 
-function createStatsDialog(store, onOpen) {
+function createStatsDialog(getStore, getWhere, onOpen) {
   const dialog = document.querySelector("#stats-dialog");
   const body = document.querySelector("#stats-body");
+  const where = document.querySelector("#stats-where");
 
   function open() {
     onOpen();
-    const rows = statsRows(store.loadStats()).map(({ label, cells }) => {
+    const rows = statsRows(getStore().loadStats()).map(({ label, cells }) => {
       const row = document.createElement("tr");
       const heading = document.createElement("th");
       heading.scope = "row";
@@ -58,22 +59,27 @@ function createStatsDialog(store, onOpen) {
       return row;
     });
     body.replaceChildren(...rows);
+    where.textContent = `Stats stay in ${getWhere()}.`;
     if (!dialog.open) dialog.showModal();
   }
 
   document.querySelector("#stats-button").addEventListener("click", open);
-  document.querySelector("#reset-stats").addEventListener("click", () => {
-    if (!window.confirm("Reset all stats in this browser? Best times are kept.")) return;
-    store.resetStats();
+  document.querySelector("#reset-stats").addEventListener("click", async () => {
+    if (!window.confirm(`Reset all stats in ${getWhere()}? Best times are kept.`)) return;
+    try {
+      await getStore().resetStats();
+    } catch {
+      window.alert("Couldn't reset the stats saved to your account. Try again later.");
+    }
     open();
   });
 }
 
 // Applies the stored settings now and on every change. `onChange(key, value)` hears each change.
-function createSettings(store, onOpen, onChange) {
+function createSettings(getStore, onOpen, onChange) {
   const dialog = document.querySelector("#settings-dialog");
   const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-  let settings = { colorblind: false, contrast: false, sound: false, reduceMotion, ...store.loadSettings() };
+  let settings = { colorblind: false, contrast: false, sound: false, reduceMotion, ...getStore().loadSettings() };
 
   function apply() {
     const root = document.documentElement;
@@ -86,7 +92,7 @@ function createSettings(store, onOpen, onChange) {
   for (const [key, selector] of Object.entries(SETTING_INPUTS)) {
     document.querySelector(selector).addEventListener("change", (event) => {
       settings = { ...settings, [key]: event.target.checked };
-      store.saveSettings({ [key]: settings[key] });
+      getStore().saveSettings({ [key]: settings[key] });
       apply();
       onChange(key, settings[key]);
     });
@@ -135,13 +141,14 @@ function createShareDialog() {
   };
 }
 
-// onOpen() runs before the stats or settings dialog opens (the app stops the AI);
+// getStore() is the store in use right now and getWhere() names it ("this browser" or "your account"),
+// both read each time a dialog needs them. onOpen() runs before the stats or settings dialog opens (the app stops the AI);
 // onSetting(key, value) hears each settings change.
 // Returns setting(key) for the current value and openShare(heading, note, text).
-export function createDialogs({ store, onOpen, onSetting }) {
-  createStatsDialog(store, onOpen);
+export function createDialogs({ getStore, getWhere, onOpen, onSetting }) {
+  createStatsDialog(getStore, getWhere, onOpen);
   return {
-    setting: createSettings(store, onOpen, onSetting),
+    setting: createSettings(getStore, onOpen, onSetting),
     openShare: createShareDialog(),
   };
 }
