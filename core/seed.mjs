@@ -1,4 +1,5 @@
-import { DIFFICULTIES, MAX_COLUMNS, MAX_ROWS } from "./game-engine.mjs";
+import { DIFFICULTIES } from "./engine.mjs";
+import { sizeError } from "./grid.mjs";
 
 const SEED_PATTERN = /^[a-z0-9-]{1,40}$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,7 +36,7 @@ export function makeSeed(random = Math.random) {
   return seed;
 }
 
-export function isValidSeed(seed) {
+function isValidSeed(seed) {
   return typeof seed === "string" && SEED_PATTERN.test(seed);
 }
 
@@ -60,6 +61,10 @@ export function dailySeed(key) {
 export function dailyStartIndex(key, config = DAILY_CONFIG) {
   const random = createRandom(`${dailySeed(key)}-start`);
   return Math.floor(random() * config.rows * config.columns);
+}
+
+export function encodeDaily(key) {
+  return `daily=${key}`;
 }
 
 export function encodeShare({ rows, columns, mines, seed, start, noGuess }) {
@@ -90,9 +95,7 @@ export function decodeShare(search) {
   const seed = params.get("seed");
   if (
     !isValidSeed(seed)
-    || !Number.isInteger(rows) || rows < 1 || rows > MAX_ROWS
-    || !Number.isInteger(columns) || columns < 1 || columns > MAX_COLUMNS
-    || !Number.isInteger(mines) || mines < 1 || mines >= rows * columns
+    || sizeError({ rows, columns, mines })
     || !Number.isInteger(start) || start < 0 || start >= rows * columns
   ) {
     return null;

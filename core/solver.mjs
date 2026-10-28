@@ -1,4 +1,5 @@
-import { neighborIndices, revealCell } from "./game-engine.mjs";
+import { reveal, revealEach } from "./engine.mjs";
+import { indexAt, isFinished, neighborIndices, positionLabel } from "./grid.mjs";
 
 // Deduces safe squares and mines using only what a player can see: revealed
 // numbers and the total mine count. Player flags are ignored because they may
@@ -78,6 +79,7 @@ function applyPairRule(constraints, add) {
 
   for (let position = 0; position < constraints.length; position += 1) {
     const first = constraints[position];
+    const firstSet = new Set(first.cells);
     const partners = new Set();
     for (const index of first.cells) {
       for (const other of byCell.get(index)) if (other > position) partners.add(other);
@@ -85,7 +87,6 @@ function applyPairRule(constraints, add) {
 
     for (const other of partners) {
       const second = constraints[other];
-      const firstSet = new Set(first.cells);
       const secondSet = new Set(second.cells);
       const shared = first.cells.filter((index) => secondSet.has(index));
       const onlyFirst = first.cells.filter((index) => !secondSet.has(index));
@@ -109,40 +110,43 @@ function applyPairRule(constraints, add) {
   return false;
 }
 
-export function explainStep(game, step) {
-  const where = (index) => `row ${Math.floor(index / game.columns) + 1}, column ${(index % game.columns) + 1}`;
-  const squares = step.cells.length === 1 ? "that square" : `those ${step.cells.length} squares`;
-  const value = (index) => game.board[index].adjacent;
+// Rule -> text. Each takes the game, the hint or step, and its wording helpers.
+const EXPLANATIONS = {
+  start: () => "Any square is safe for your first move. The middle is a good start.",
+  "wrong-flag": (game, hint) => `The flag at ${positionLabel(game, hint.cells[0])} is on a square the numbers prove safe.`,
+  clear: (game, step, say) => `The ${clue(game, step.clues[0])} already has all its mines accounted for, so ${say.squares} ${say.is} safe.`,
+  full: (game, step, say) => `The ${clue(game, step.clues[0])} has only ${say.neighbors} left for its mines, so ${say.squares} ${say.mines}.`,
+  pair: (game, step, say) => `Comparing the ${clue(game, step.clues[0])} with the ${clue(game, step.clues[1])} shows ${say.squares} ${step.kind === "safe" ? `${say.is} safe` : say.mines}.`,
+  "count-safe": (game, step, say) => `Every mine is accounted for, so ${say.squares} ${say.is} safe.`,
+  "count-mine": (game, step, say) => `The covered squares left exactly match the mines left, so ${say.squares} ${say.mines}.`,
+};
 
-  switch (step.rule) {
-    case "clear":
-      return `The ${value(step.clues[0])} at ${where(step.clues[0])} already has all its mines accounted for, so ${squares} ${step.cells.length === 1 ? "is" : "are"} safe.`;
-    case "full":
-      return `The ${value(step.clues[0])} at ${where(step.clues[0])} has only ${step.cells.length === 1 ? "one covered neighbor" : `${step.cells.length} covered neighbors`} left for its mines, so ${squares} ${step.cells.length === 1 ? "is a mine" : "are mines"}.`;
-    case "pair":
-      return `Comparing the ${value(step.clues[0])} at ${where(step.clues[0])} with the ${value(step.clues[1])} at ${where(step.clues[1])} shows ${squares} ${step.kind === "safe" ? (step.cells.length === 1 ? "is safe" : "are safe") : (step.cells.length === 1 ? "is a mine" : "are mines")}.`;
-    case "count-safe":
-      return `Every mine is accounted for, so ${squares} ${step.cells.length === 1 ? "is" : "are"} safe.`;
-    case "count-mine":
-      return `The covered squares left exactly match the mines left, so ${squares} ${step.cells.length === 1 ? "is a mine" : "are mines"}.`;
-    default:
-      return "";
-  }
+function clue(game, index) {
+  return `${game.board[index].adjacent} at ${positionLabel(game, index)}`;
 }
 
-function centerIndex(game) {
-  return Math.floor(game.rows / 2) * game.columns + Math.floor(game.columns / 2);
+export function explainHint(game, hint) {
+  const count = hint.cells.length;
+  const one = count === 1;
+  const say = {
+    squares: one ? "that square" : `those ${count} squares`,
+    is: one ? "is" : "are",
+    mines: one ? "is a mine" : "are mines",
+    neighbors: one ? "one covered neighbor" : `${count} covered neighbors`,
+  };
+  return EXPLANATIONS[hint.rule]?.(game, hint, say) ?? "";
 }
 
-// Returns the first useful deduction for the current position, a flag the
-// solver proves wrong, a starting suggestion, or null when a guess is needed.
-export function findHint(game) {
-  if (game.phase === "won" || game.phase === "lost") return null;
-  if (!game.initialized) {
-    return { kind: "start", cells: [centerIndex(game)], rule: "start", clues: [] };
-  }
+// The middle square, or the first unflagged one if the player flagged the middle;
+// null when every square is flagged.
+function startHint(game) {
+  const middle = indexAt(game.columns, Math.floor(game.rows / 2), Math.floor(game.columns / 2));
+  const index = game.board[middle].flagged ? game.board.findIndex((cell) => !cell.flagged) : middle;
+  return index === -1 ? null : { kind: "start", cells: [index], rule: "start", clues: [] };
+}
 
-  const { steps, safe } = deduce(game);
+// The first useful deduction, or a flag the solver proves wrong; null when a guess is needed.
+function logicHint(game, { steps, safe }) {
   const wrongFlag = game.board.findIndex((cell, index) => cell.flagged && safe.has(index));
   if (wrongFlag !== -1) {
     return { kind: "wrong-flag", cells: [wrongFlag], rule: "wrong-flag", clues: [] };
@@ -157,12 +161,11 @@ export function findHint(game) {
   return null;
 }
 
-export function explainHint(game, hint) {
-  if (hint.kind === "start") return "Any square is safe for your first move. The middle is a good start.";
-  if (hint.kind === "wrong-flag") {
-    return `The flag at row ${Math.floor(hint.cells[0] / game.columns) + 1}, column ${(hint.cells[0] % game.columns) + 1} is on a square the numbers prove safe.`;
-  }
-  return explainStep(game, hint);
+// Returns the first useful deduction for the current position, a flag the
+// solver proves wrong, a starting suggestion, or null when a guess is needed.
+export function findHint(game) {
+  if (isFinished(game)) return null;
+  return game.initialized ? logicHint(game, deduce(game)) : startHint(game);
 }
 
 // True when the solver can clear the whole board from this position without guessing.
@@ -177,9 +180,7 @@ export function isSolvable(game) {
     const { safe, mines } = deduce(current, { knownMines });
     knownMines = [...mines];
     if (safe.size === 0) return false;
-    for (const index of safe) {
-      current = revealCell(current, Math.floor(index / current.columns), index % current.columns);
-    }
+    current = revealEach(current, safe);
   }
   return current.phase === "won";
 }
@@ -188,25 +189,22 @@ export function isSolvable(game) {
 // square's neighbors clear and retries layouts until one can be solved by
 // logic alone. The attempt limit keeps seeded boards repeatable; very dense
 // boards are almost never guess-free, so they get fewer tries.
-export function generateBoard(game, index, random, { noGuess = false, attempts } = {}) {
-  attempts ??= game.mineCount / game.board.length > 0.24 ? 40 : 300;
-  const row = Math.floor(index / game.columns);
-  const column = index % game.columns;
-  if (!noGuess) return { game: revealCell(game, row, column, random), guaranteed: false };
+export function generateBoard(game, index, random, { noGuess = false } = {}) {
+  const attempts = game.mineCount / game.board.length > 0.24 ? 40 : 300;
+  if (!noGuess) return { game: reveal(game, index, random), guaranteed: false };
 
   let candidate = game;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    candidate = revealCell(game, row, column, random, { safeArea: true });
+    candidate = reveal(game, index, random, { safeArea: true });
     if (candidate.phase === "won" || isSolvable(candidate)) {
-      return { game: candidate, guaranteed: true, attempts: attempt };
+      return { game: candidate, guaranteed: true };
     }
   }
-  return { game: candidate, guaranteed: false, attempts };
+  return { game: candidate, guaranteed: false };
 }
 
 // Picks the covered square least likely to hide a mine, as a simple estimate.
-export function chooseGuess(game, random = Math.random) {
-  const { mines, safe } = deduce(game);
+function guessFrom(game, { mines, safe }, random) {
   const constraints = buildConstraints(game, mines, safe);
   const risk = new Map();
   for (const constraint of constraints) {
@@ -239,14 +237,21 @@ export function chooseGuess(game, random = Math.random) {
   return { index: choices[Math.floor(random() * choices.length)], risk: best };
 }
 
+export function chooseGuess(game, random = Math.random) {
+  return guessFrom(game, deduce(game), random);
+}
+
 // Decides the autoplayer's next move and explains it in plain words.
 export function nextAgentMove(game, random = Math.random) {
-  if (game.phase === "won" || game.phase === "lost") return null;
+  if (isFinished(game)) return null;
 
-  const hint = findHint(game);
-  if (hint?.kind === "start") {
-    return { action: "reveal", index: hint.cells[0], kind: "start", clues: [], text: "Opening in the middle. The first square is always safe." };
+  if (!game.initialized) {
+    const start = startHint(game);
+    return start && { action: "reveal", index: start.cells[0], kind: "start", clues: [], text: "Opening in the middle. The first square is always safe." };
   }
+
+  const deduction = deduce(game);
+  const hint = logicHint(game, deduction);
   if (hint?.kind === "wrong-flag") {
     return { action: "unflag", index: hint.cells[0], kind: "logic", clues: [], text: `Removing a wrong flag. ${explainHint(game, hint)}` };
   }
@@ -256,18 +261,17 @@ export function nextAgentMove(game, random = Math.random) {
       index: hint.cells[0],
       kind: "logic",
       clues: hint.clues,
-      text: explainStep(game, hint),
+      text: explainHint(game, hint),
     };
   }
 
-  const guess = chooseGuess(game, random);
+  const guess = guessFrom(game, deduction, random);
   if (!guess) return null;
-  const where = `row ${Math.floor(guess.index / game.columns) + 1}, column ${(guess.index % game.columns) + 1}`;
   return {
     action: game.board[guess.index].flagged ? "unflag" : "reveal",
     index: guess.index,
     kind: "guess",
     clues: [],
-    text: `No move is certain, so guessing ${where} (about ${Math.round(guess.risk * 100)}% risk).`,
+    text: `No move is certain, so guessing ${positionLabel(game, guess.index)} (about ${Math.round(guess.risk * 100)}% risk).`,
   };
 }

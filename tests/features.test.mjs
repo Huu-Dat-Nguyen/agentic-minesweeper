@@ -1,16 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGame, DIFFICULTIES, neighborIndices, revealCell, toggleFlag } from "./game-engine.mjs";
+import { createGame, DIFFICULTIES, reveal, toggleFlag } from "../core/engine.mjs";
+import { isFinished, neighborIndices } from "../core/grid.mjs";
 import {
   createRandom,
   dailyStartIndex,
   dateKey,
   decodeShare,
+  encodeDaily,
   encodeShare,
   hashSeed,
   isValidDateKey,
   makeSeed,
-} from "./seed.mjs";
+} from "../core/seed.mjs";
 import {
   chooseGuess,
   deduce,
@@ -19,8 +21,8 @@ import {
   generateBoard,
   isSolvable,
   nextAgentMove,
-} from "./solver.mjs";
-import { recordResult, sanitizeStats, summarize, threeBV } from "./stats.mjs";
+} from "../core/solver.mjs";
+import { rate, recordResult, sanitizeStats, summarize, threeBV } from "../core/stats.mjs";
 
 // Builds a started game from rows of "*" (mine) and "." (safe), revealing the given indices.
 function buildGame(layout, revealed = []) {
@@ -33,30 +35,29 @@ function buildGame(layout, revealed = []) {
     if (!cell.mine) cell.adjacent = neighborIndices(game, index).filter((neighbor) => board[neighbor].mine).length;
   });
   for (const index of revealed) board[index].revealed = true;
-  return { ...game, board, initialized: true, phase: "playing" };
+  const safeLeft = board.filter((cell) => !cell.mine && !cell.revealed).length;
+  return { ...game, board, initialized: true, phase: "playing", safeLeft };
 }
 
 function playAgentToEnd(game, random) {
   let current = game;
   const kinds = [];
-  for (let moves = 0; moves < 2000 && current.phase !== "won" && current.phase !== "lost"; moves += 1) {
+  for (let moves = 0; moves < 2000 && !isFinished(current); moves += 1) {
     const move = nextAgentMove(current, random);
     kinds.push(move.kind);
-    const row = Math.floor(move.index / current.columns);
-    const column = move.index % current.columns;
     current = move.action === "reveal"
-      ? revealCell(current, row, column, random)
-      : toggleFlag(current, row, column);
+      ? reveal(current, move.index, random)
+      : toggleFlag(current, move.index);
   }
   return { game: current, kinds };
 }
 
 test("a safe-area first reveal keeps every neighbor mine-free, with a fallback for dense boards", () => {
-  const roomy = revealCell(createGame({ rows: 5, columns: 5, mines: 16 }), 2, 2, () => 0, { safeArea: true });
+  const roomy = reveal(createGame({ rows: 5, columns: 5, mines: 16 }), 12, () => 0, { safeArea: true });
   assert.equal(roomy.board[12].adjacent, 0);
   for (const neighbor of neighborIndices(roomy, 12)) assert.equal(roomy.board[neighbor].mine, false);
 
-  const dense = revealCell(createGame({ rows: 3, columns: 3, mines: 8 }), 1, 1, () => 0, { safeArea: true });
+  const dense = reveal(createGame({ rows: 3, columns: 3, mines: 8 }), 4, () => 0, { safeArea: true });
   assert.equal(dense.board.filter((cell) => cell.mine).length, 8);
   assert.equal(dense.board[4].mine, false);
 });
@@ -84,7 +85,8 @@ test("validates daily date keys and picks a repeatable start square", () => {
 test("share links round-trip and reject tampered values", () => {
   const board = { rows: 16, columns: 30, mines: 99, seed: "k3j9x0aa", start: 245, noGuess: true };
   assert.deepEqual(decodeShare(`?${encodeShare(board)}`), { type: "shared", ...board });
-  assert.deepEqual(decodeShare("?daily=2026-10-12"), { type: "daily", date: "2026-10-12" });
+  assert.equal(encodeDaily("2026-10-12"), "daily=2026-10-12");
+  assert.deepEqual(decodeShare(`?${encodeDaily("2026-10-12")}`), { type: "daily", date: "2026-10-12" });
   assert.equal(decodeShare("?daily=2026-13-01"), null);
   assert.equal(decodeShare("?r=9&c=9&m=81&seed=abc&start=0"), null);
   assert.equal(decodeShare("?r=9&c=9&m=10&seed=<b>&start=0"), null);
@@ -132,7 +134,7 @@ test("hints suggest the middle first, catch wrong flags, and skip finished work"
   assert.deepEqual(findHint(fresh).cells, [40]);
 
   const game = buildGame(["*..", "..."], [2, 3, 4, 5]);
-  const wrong = toggleFlag(game, 0, 1);
+  const wrong = toggleFlag(game, 1);
   const wrongHint = findHint(wrong);
   assert.equal(wrongHint.kind, "wrong-flag");
   assert.match(explainHint(wrong, wrongHint), /row 1, column 2/);
@@ -141,7 +143,7 @@ test("hints suggest the middle first, catch wrong flags, and skip finished work"
   assert.equal(hint.kind, "safe");
   assert.match(explainHint(game, hint), /The 0 at row 1, column 3/);
 
-  const flaggedMine = toggleFlag(revealCell(game, 0, 1), 0, 0);
+  const flaggedMine = toggleFlag(reveal(game, 1), 0);
   assert.equal(findHint(flaggedMine), null);
 });
 
@@ -175,6 +177,11 @@ test("counts 3BV for openings and isolated numbers", () => {
   assert.equal(threeBV(createGame(DIFFICULTIES.beginner)), 0);
 });
 
+test("rate divides board value by at least one second", () => {
+  assert.equal(rate(30, 10), 3);
+  assert.equal(rate(30, 0), 30);
+});
+
 test("records results with streaks, best times, and best 3BV/s", () => {
   let stats = {};
   stats = recordResult(stats, "beginner", { won: true, seconds: 20, boardValue: 30 });
@@ -200,4 +207,19 @@ test("drops malformed stored stats", () => {
   assert.deepEqual(clean, { beginner: good });
   assert.deepEqual(sanitizeStats(null), {});
   assert.deepEqual(sanitizeStats([1]), {});
+});
+
+test("the start hint and the AI skip a flagged middle square instead of looping", () => {
+  const flagged = toggleFlag(createGame(DIFFICULTIES.beginner), 40);
+  const hint = findHint(flagged);
+  assert.equal(hint.kind, "start");
+  assert.notEqual(hint.cells[0], 40);
+  const move = nextAgentMove(flagged, () => 0);
+  assert.equal(move.action, "reveal");
+  assert.equal(flagged.board[move.index].flagged, false);
+
+  let all = createGame({ rows: 1, columns: 2, mines: 1 });
+  all = toggleFlag(toggleFlag(all, 0), 1);
+  assert.equal(findHint(all), null);
+  assert.equal(nextAgentMove(all, () => 0), null);
 });

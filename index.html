@@ -12,7 +12,8 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/game.css">
     <script type="module" src="app.mjs"></script>
   </head>
   <body>
@@ -22,7 +23,10 @@
           <span class="brand-mark" aria-hidden="true"><span></span></span>
           <span class="brand-name">minefield<span class="brand-period">.</span></span>
         </a>
-        <a class="header-note" href="build.html"><span class="live-dot" aria-hidden="true"></span> How it was built →</a>
+        <div class="header-links">
+          <button class="header-note account-button" id="account-button" type="button" aria-haspopup="dialog">Sign in</button>
+          <a class="header-note" href="build.html"><span class="live-dot" aria-hidden="true"></span> How it was built →</a>
+        </div>
       </header>
 
       <main class="game-main">
@@ -106,6 +110,9 @@
               <button class="tool-button" id="replay-button" type="button" aria-label="Replay this game" title="Watch the finished game move by move" disabled>
                 <span class="tool-icon" aria-hidden="true">⟲</span><span class="tool-text">Replay</span>
               </button>
+              <button class="tool-button" id="leaders-button" type="button" aria-label="Leaderboard" title="Fastest unassisted wins">
+                <span class="tool-icon" aria-hidden="true">♛</span><span class="tool-text">Leaders</span>
+              </button>
               <button class="tool-button" id="stats-button" type="button" aria-label="Stats" title="Games played, win rate, streaks, and speed">
                 <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-text">Stats</span>
               </button>
@@ -179,10 +186,75 @@
           <tbody id="stats-body"></tbody>
         </table>
       </div>
-      <p class="panel-note">Stats stay in this browser. Games with hints, the AI, or an undo after a loss don't count.</p>
+      <p class="panel-note"><span id="stats-where">Stats stay in this browser.</span> Games with hints, the AI, or an undo after a loss don't count.</p>
       <div class="panel-actions">
         <button class="panel-action is-danger" id="reset-stats" type="button">Reset stats</button>
       </div>
+    </dialog>
+
+    <dialog class="panel panel-wide" id="leaders-dialog" aria-labelledby="leaders-title">
+      <div class="panel-head">
+        <h2 id="leaders-title">Leaderboard</h2>
+        <form method="dialog"><button class="panel-close" type="submit" aria-label="Close">×</button></form>
+      </div>
+      <div class="leaders-tabs" role="group" aria-label="Leaderboard mode">
+        <button class="tool-button" type="button" data-leaders="beginner" aria-pressed="true">Beginner</button>
+        <button class="tool-button" type="button" data-leaders="intermediate" aria-pressed="false">Intermediate</button>
+        <button class="tool-button" type="button" data-leaders="expert" aria-pressed="false">Expert</button>
+        <button class="tool-button" type="button" data-leaders="daily" aria-pressed="false">Daily</button>
+      </div>
+      <div class="stats-wrap" id="leaders-wrap" hidden>
+        <table class="stats-table leaders-table">
+          <thead>
+            <tr>
+              <th scope="col">Rank</th>
+              <th scope="col">Player</th>
+              <th scope="col">Time (s)</th>
+              <th scope="col"><abbr title="Board difficulty (3BV) cleared per second">3BV/s</abbr></th>
+            </tr>
+          </thead>
+          <tbody id="leaders-body"></tbody>
+        </table>
+      </div>
+      <p class="panel-note" id="leaders-status" role="status"></p>
+      <p class="panel-note">Only unassisted wins count. Times are sent by players' browsers and are not verified.</p>
+    </dialog>
+
+    <dialog class="panel" id="account-dialog" aria-labelledby="account-title">
+      <div class="panel-head">
+        <h2 id="account-title">Sign in</h2>
+        <form method="dialog"><button class="panel-close" type="submit" aria-label="Close">×</button></form>
+      </div>
+      <form class="account-form" id="account-form" novalidate>
+        <label class="account-field">
+          <span class="custom-label">EMAIL</span>
+          <input class="account-input" id="account-email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false">
+        </label>
+        <label class="account-field">
+          <span class="custom-label">PASSWORD</span>
+          <input class="account-input" id="account-password" type="password" autocomplete="current-password" minlength="6">
+        </label>
+        <label class="account-field" id="account-username-field" hidden>
+          <span class="custom-label">USERNAME</span>
+          <input class="account-input" id="account-username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20">
+        </label>
+        <p class="account-message" id="account-message" role="alert"></p>
+        <div class="account-actions">
+          <button class="panel-action" id="account-submit" type="submit">Sign in</button>
+          <button class="panel-action is-quiet" id="account-toggle" type="button">Create account</button>
+        </div>
+      </form>
+      <div class="account-signed-in" id="account-signed-in" hidden>
+        <p class="account-name">Signed in as <strong id="account-name"></strong></p>
+        <p class="panel-note">Your games and stats are saved to your account.</p>
+        <div class="panel-actions">
+          <button class="panel-action" id="account-sign-out" type="button">Sign out</button>
+        </div>
+        <h3 class="history-title">Your games</h3>
+        <p class="panel-note" id="history-message" role="status"></p>
+        <ul class="history-list" id="history-list"></ul>
+      </div>
+      <p class="panel-note">Stats already saved in this browser stay here; they are not added to your account.</p>
     </dialog>
 
     <dialog class="panel" id="settings-dialog" aria-labelledby="settings-title">

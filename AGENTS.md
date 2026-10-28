@@ -1,6 +1,6 @@
 # Agent Instructions
 
-Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no dependencies, backend, or build step. It doubles as a showcase of agentic coding: human prompts set direction, agents implement and verify.
+Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no dependencies or build step; optional accounts use a Supabase database (`supabase/schema.sql`) through plain `fetch`. It doubles as a showcase of agentic coding: human prompts set direction, agents implement and verify.
 
 - Live site: https://huu-dat-nguyen.github.io/agentic-minesweeper/
 - Repository: https://github.com/Huu-Dat-Nguyen/agentic-minesweeper (public; GitHub Pages deploys `main` from the repository root on every push)
@@ -9,19 +9,34 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 
 | Path | Role |
 |---|---|
-| `game-engine.mjs` | Pure game rules: `DIFFICULTIES`, `MAX_ROWS`/`MAX_COLUMNS`, `createGame`, `revealCell` (optional `safeArea` first reveal), `toggleFlag`, `chordCell`, `undo`, `neighborIndices`. No DOM access. |
-| `solver.mjs` | Logic solver using only visible information: `deduce`, `findHint`/`explainHint`, `isSolvable`, `generateBoard` (no-guess layouts), `chooseGuess`, `nextAgentMove`. |
-| `seed.mjs` | Seeded random (`createRandom`), daily date keys and start squares, share-link `encodeShare`/`decodeShare` with validation. |
-| `stats.mjs` | `threeBV`, `recordResult`, `summarize`, `sanitizeStats`. |
-| `game-engine.test.mjs`, `features.test.mjs` | `node:test` suites for the engine and for solver, seeds, and stats. |
-| `app.mjs` | UI: rendering, input (mouse, touch, keyboard), timer, undo history, tools (hint, AI, daily, share, replay, stats, settings), sound, service-worker registration. |
-| `index.html`, `styles.css` | Markup, dialogs, and the dark, viewport-filling responsive layout. |
-| `build.html`, `build.css` | Public "How it was built" timeline page. |
-| `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and app install. Bump `CACHE_NAME` in `sw.js` when its file list changes. |
+| `core/grid.mjs` | Single home for board geometry: `MAX_ROWS`/`MAX_COLUMNS`, `sizeError`, `rowCol`/`indexAt`, `inBounds`, cached `neighborIndices`, `positionLabel`, `isFinished`. |
+| `core/engine.mjs` | Pure game rules on cell indices: `DIFFICULTIES`, `createGame`, `reveal`/`revealEach` (optional `safeArea` first reveal), `toggleFlag`, `chord`, `countFlags`. Games carry `safeLeft`. No DOM. |
+| `core/solver.mjs` | Logic solver on visible information only: `deduce`, `findHint`/`explainHint`, `isSolvable`, `generateBoard` (no-guess), `chooseGuess`, `nextAgentMove`. |
+| `core/seed.mjs` | Seeded random, daily keys and start squares, `encodeShare`/`encodeDaily`/`decodeShare`. |
+| `core/stats.mjs` | `threeBV`, `rate`, `recordResult`, `summarize`, `sanitizeStats`. |
+| `core/moves.mjs` | A game is seed + moves: `startGame`, `applyMove` (the one path for play and replay), `toRecord`, `replay`. |
+| `modes.mjs` | Strategy objects for normal, daily and shared games (keys, links, labels, share texts, restart) and session factories. |
+| `ui/*.mjs` | `board` (repaints changed cells only), `input` (events to intents, one guard spot), `agent`, `replay`, `dialogs` (stats, settings, share), `account` (header button, sign-in/create-account dialog, form checks), `sound`, `clock`. |
+| `ui/leaderboard.mjs` | Leaders dialog: `leaderRows` formatting, tabs, loads `top_times` (works signed out). |
+| `ui/history.mjs` | "Your games" in the account dialog: `recordFromRow`, `historyRows`, a Replay button per saved game (plays through `ui/replay.mjs` `watch`). |
+| `data/store.mjs` | `LocalStore`: the only code touching `localStorage` (see the data map below). |
+| `config.mjs` | Supabase URL and publishable key (public by design; RLS protects the data). Never add a secret or service_role key. |
+| `data/supabase.mjs` | `createSupabase`: Adapter over Supabase Auth and REST with plain fetch (sign-up/in/out, token refresh, profile, games, `top_times`). Throws readable errors. |
+| `data/cloud.mjs` | `CloudStore`: same interface as `LocalStore`, with stats and best times derived from the player's saved games; failed saves wait in the outbox. Not wired into `app.mjs` until S9. |
+| `supabase/schema.sql` | Tables `profiles` and `games`, RLS, profile trigger, `top_times` function. Run once in the Supabase SQL Editor. |
+| `app.mjs` | Wiring only: session, one `play()` path for every move, one `interrupt()` facade. |
+| `tests/` | `node:test` suites for every module; `sw.test.mjs` keeps the offline file list complete. |
+| `tests/golden.test.mjs`, `tests/fixtures/` | v1 outputs (`golden.json`, written by `make-golden.mjs` at `bc67f76`, where the v1 modules it imports exist) that seeded boards, daily boards and share links must keep matching. |
+| `index.html`, `css/game.css` | Game markup, dialogs, and the dark, viewport-filling layout (on `css/base.css`). |
+| `build.html`, `css/build.css` | Public "How it was built" timeline page. Updated at the end of every v2 step. |
+| `css/base.css` | Shared colors, reset, header, focus and reduced motion for every page. |
+| `docs/coding-rules.md` | Snapshot of the author's coding rules that v2 follows. |
+| `report/` | v2 comparison: `baseline-audit.md`, `*-metrics.json` (from `measure.mjs`), `shots.mjs` (headless screenshots), `pixel-diff.py` (compare screenshot sets), later `rewrite-comparison.md`. |
+| `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and app install. Same-origin GETs only; bump `CACHE_NAME` when the list changes (`tests/sw.test.mjs` checks the list). |
 | `README.md` | Public write-up: prompt/result table, features, local play, deployment. |
 | `minefield-preview.png`, `docs/images/` | Public README and build-page images. |
 | `.claude/launch.json` | Local preview server (`py -m http.server 8000`). |
-| `log` | Private, gitignored prompt history. |
+| `log` | Private, gitignored prompt history (restarted at v2; the v1 log was lost). |
 | `before-*.png` | Private, gitignored historical screenshots. Never overwrite, delete, or publish. |
 
 ## Features
@@ -30,18 +45,26 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 - Safe first reveal, clues, flood reveal, flags, restart, win/loss feedback.
 - Chording via right-click or the C key on a revealed number when adjacent flags match.
 - Undo of any move, including after a win or loss.
-- Never-negative mine counter, four-digit timer, per-difficulty best times in `localStorage` (`minefield.bestTimes.v1`).
+- Never-negative mine counter, four-digit timer, per-difficulty best times in `localStorage` (`minefield.bestTimes.v1`); custom boards keep stats but no best time (`core/stats.mjs` `tracksBestTime`, bestKey `null`).
 - Reveal/Flag touch modes, arrow-key navigation, Enter/Space to activate, live-region announcements.
 - Tools row: No-guess toggle, Hint, Watch AI, Daily, Share, Replay, Stats, Settings.
 - Every game has a seed. The first reveal places mines from it, so a share link (`?r&c&m&seed&start&ng`) or daily link (`?daily=YYYY-MM-DD`) rebuilds the same board and opens its start square.
 - Games with hints, the AI, or an undo after a loss are "assisted" and don't count toward stats or best times.
-- Stored in `localStorage`: `minefield.bestTimes.v1` (daily times keyed `daily:DATE`), `minefield.stats.v1`, `minefield.settings.v1`.
+- Stored in `localStorage` (writer -> key -> readers), all through `data/store.mjs` `LocalStore`, which is the only code that touches these keys:
+  - `LocalStore.recordGame` (called by `app.mjs` `finishMessage`, first unassisted finish only) -> `minefield.stats.v1` (key per `statsKey`, shape from `core/stats.mjs`) -> `loadStats` (stats dialog in `ui/dialogs.mjs`, `recordGame`). `resetStats` clears it.
+  - `LocalStore.recordGame` (wins that beat the stored time) -> `minefield.bestTimes.v1` (whole seconds keyed by mode `bestKey`, daily times as `daily:DATE`; invalid values dropped on load) -> `bestTime` (BEST display in `app.mjs` `showBest`), `recordGame`. Reset stats keeps it.
+  - Store in use (`app.mjs` `chooseStore`): `LocalStore` when signed out, while the account loads, or if loading fails; `CloudStore` once signed in and loaded. Local stats are never merged into an account.
+  - Read-only, nothing stored: `ui/leaderboard.mjs` reads the public `top_times` call (`data/supabase.mjs` `topTimes`); `ui/history.mjs` reads `CloudStore.games()` rows.
+  - `ui/dialogs.mjs` settings dialog (colorblind, contrast, sound, reduceMotion) and `app.mjs` no-guess toggle -> `minefield.settings.v1` (via `saveSettings`, which merges) -> `loadSettings` (`ui/dialogs.mjs` at start, `app.mjs` at start).
+  - `LocalStore.saveSession` (`data/supabase.mjs`, on sign-in, token refresh and sign-out) -> `minefield.session.v1` (tokens, `expires_at` seconds, user id/email) -> `createSupabase` at start via `loadSession`.
+  - `LocalStore.saveOutbox` (`CloudStore.recordGame` appends; `flush` removes after a successful save) -> `minefield.outbox.v1` (newest 50 game rows not yet saved) -> `CloudStore.flush`/`load`.
+- Supabase (writer -> table -> readers): `CloudStore.recordGame`/`flush` -> `games` (one row per first finish, assisted included; RLS: own rows only, insert and select) -> `CloudStore.load` (stats, best times, history via `core/stats.mjs` `statsFromGames`/`bestTimesFromGames`) and the `top_times` function (unassisted wins, one row per player). The sign-up trigger -> `profiles` (username, `stats_reset_at`); `CloudStore.resetStats` sets `stats_reset_at` -> `CloudStore.load` (only later games count for stats; best times use all games).
 
 ## Engine conventions
 
 - Engine functions are pure: they return a new game object and never mutate their input. Invalid or no-op moves return the same object unchanged; invalid board sizes or random sources throw.
 - Game `phase` is `ready`, `playing`, `won`, or `lost`. Mines are placed on the first reveal and never on the revealed cell (its neighbors may still be mines).
-- Undo works by `app.mjs` pushing pre-action snapshots onto a history array; `undo(game, history)` pops the last one.
+- Every move (including undo) goes through `core/moves.mjs` `applyMove`, which keeps pre-move snapshots in `history` and records the move; replay rebuilds a game from its seed and moves.
 - The solver never reads hidden mines or trusts player flags. Its rules: single clues, overlapping clue pairs, and the total mine count. No-guess boards are only guaranteed solvable by these rules.
 - `generateBoard` uses a fixed attempt limit (300, or 40 for boards over 24% mines) so seeded boards come out the same everywhere. Changing the generator or solver changes what old share links produce.
 - Add or update tests for every rule, solver, seed, or stats change.
@@ -62,33 +85,34 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 
 ```powershell
 node --test
-node --check .\app.mjs
-node --check .\game-engine.mjs
-node --check .\solver.mjs
-node --check .\sw.js
+Get-ChildItem *.mjs, core\*.mjs, ui\*.mjs, data\*.mjs, sw.js | ForEach-Object { node --check $_.FullName }
 ```
 
 For UI changes, also check gameplay, outcomes, keyboard/touch controls, and desktop/mobile layouts in a browser (serve with `py -m http.server 8000`; modules do not load from `file://`). The service worker serves network-first, but a browser may still hold old files; force-reload when testing. Report what was and was not verified.
 
-## Status (2026-10-12)
+## Status (2026-10-28)
 
-- All 30 tests (16 engine, 14 feature) and the syntax checks pass.
-- The ten-idea expansion below was merged to `main` in PR #1 (`61bf362`) and is live. Four existing bugs were fixed along the way: Undo needed two presses, Custom boards threw an error, the custom panel showed on every level, and the timer started at three digits.
-- The live site was smoke-tested after deploy: new files served, bug fixes, no-guess, hint, share-link reproduction, daily, Watch AI, replay, stats, settings, service-worker cache, and the build page. Not yet checked live: phone layout, sound, and the install prompt.
-- Local `main` matches `origin/main`; the merged feature branch has been deleted.
-- Next: keep docs, tests, and the published site in sync; when the solver or generator changes, note that old share links will produce different boards.
+- `main` (`bc67f76`, v1) is still what the live site serves; nothing from v2 is pushed.
+- Branch `feature/v2-rewrite` holds the finished plan (S0–S10): rewrite under the coding rules (`report/rewrite-comparison.md`) plus optional Supabase accounts, leaderboard and history. 133 tests pass.
+- Supabase project `zsulmktqcdervnlbbqah`; `supabase/schema.sql` has been run. Keys: only the publishable key, in `config.mjs`. Never add a secret or service_role key.
+- Before merging: pushing `main` deploys. Visitors on v1 may load one stale file from their browser cache for up to ~10 minutes after the deploy (v1's service worker doesn't revalidate); v2's does.
+- Not tested: real sound, the install prompt, a physical phone; editing/deleting games and changing usernames live (blocked by grants, not exercised).
+- Seeded output must keep matching `tests/fixtures/golden.json`; if it can't, stop and ask.
 
-## Improvement checklist
+## v2 checklist (about 1 hour each; database only after the rewrite)
 
-All ten items are done, checked in a browser, reviewed, and merged.
+- [x] S0. Baseline: branch, coding-rules snapshot, golden fixtures, baseline metrics and audit, `before-v2-*.png`, new log, build page on `css/base.css` with a v2 section.
+- [x] S1. Core grid + engine: `core/grid.mjs` (single home for index math, neighbors, labels, size checks, `isFinished`), `core/engine.mjs`; tests under `tests/`.
+- [x] S2. Solver, seed, stats, moves: `core/solver.mjs`, `core/seed.mjs`, `core/stats.mjs`, new `core/moves.mjs` (games as seed + move list); golden must match; time `generateBoard`.
+- [x] S3. Modes + board: `modes.mjs` (Strategy for normal/daily/shared), `ui/board.mjs` (update changed cells only), bare `app.mjs` with basic play.
+- [x] S4. Input + tools: `ui/input.mjs`, hint, `ui/agent.mjs`, undo, daily, share, one `interrupt()` facade.
+- [x] S5. Replay, dialogs, sound: `ui/replay.mjs` on moves, `ui/dialogs.mjs`, `ui/sound.mjs`, `data/store.mjs` `LocalStore` reading the existing keys.
+- [x] S6. CSS + offline: `css/game.css` on `base.css`, merge duplicates, update `sw.js`, remove old files.
+- [x] S7. Rewrite check + report: full browser check, `report/rewrite-comparison.md`, build-page v2 table, README and this file.
+- [x] S8. Supabase schema + adapter: `supabase/schema.sql` with RLS, `data/supabase.mjs`, `CloudStore` (fake-fetch tests). Project `zsulmktqcdervnlbbqah` (publishable key in `config.mjs`); schema run by the user 2026-10-28. Checked live signed out: leaderboard and usernames readable, games unreadable and unsaveable, profiles not editable, trigger function not callable. Signed-in checks need a user-made account (S9).
+- [x] S9. Account UI + per-player stats against the real project. Checked live 2026-10-28 with the user's account (`nhd`): games saved, stats/best loaded, leaderboard shows the win, reads return only own games, saving under another user_id refused by RLS. Not live-tested (blocked as destructive; enforced by grants): editing/deleting games, changing the username. Known limit: other open tabs show the old sign-in state until reloaded.
+- [x] S10. Leaderboard + history dialogs, "Accounts and leaderboard" build-page section, final docs and check. Checked live 2026-10-28 with the user's account: history lists both games, the saved win replays to the same finished board, leaderboard highlights the own row; signed out in headless Chrome at 375 px. sw.js now revalidates (`cache: "no-cache"`, install with `reload`) after a stale-module mix was seen.
 
-- [x] 1. No-guess mode: boards that can be solved by logic alone (`solver.mjs`, seeded by `seed.mjs`).
-- [x] 2. Hint button: highlight a square the numbers prove safe (or a mine) and explain why; hinted games don't count toward best times.
-- [x] 3. AI autoplayer: watch the solver play step by step with explanations.
-- [x] 4. Daily challenge: same seeded no-guess Intermediate board for everyone each day, with a spoiler-free shareable result.
-- [x] 5. Shareable boards: seed, size, and first square in the URL so others play the same board.
-- [x] 6. Game replay: play or step through a finished game move by move, with mines shown faintly.
-- [x] 7. Stats: games played, win rate, streaks, best and average times, and best 3BV/s per mode (`stats.mjs`).
-- [x] 8. Offline app (PWA): manifest, icons, and a network-first service worker (`sw.js`); still no dependencies.
-- [x] 9. Accessibility options: colorblind-safe numbers, high contrast, synthesized sound, and reduced motion.
-- [x] 10. "How it was built" page (`build.html`): prompt-by-prompt timeline with results and commit links.
+## v1 improvement checklist (done)
+
+All ten v1 ideas were built, checked, and merged in PR #1: no-guess mode, hints, AI autoplayer, daily challenge, shareable boards, replay, stats, offline app, accessibility options, and the build page.

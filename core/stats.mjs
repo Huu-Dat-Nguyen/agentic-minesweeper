@@ -1,4 +1,4 @@
-import { neighborIndices } from "./game-engine.mjs";
+import { neighborIndices } from "./grid.mjs";
 
 // 3BV: the fewest clicks needed to clear a board. Each connected empty area
 // counts once, plus every safe number not touching an empty area.
@@ -37,21 +37,25 @@ const EMPTY_ENTRY = Object.freeze({
   bestRate: null,
 });
 
-export function emptyEntry() {
+function emptyEntry() {
   return { ...EMPTY_ENTRY };
+}
+
+export function rate(boardValue, seconds) {
+  return boardValue / Math.max(1, seconds);
 }
 
 export function recordResult(stats, key, { won, seconds, boardValue }) {
   const entry = { ...emptyEntry(), ...stats[key] };
   entry.played += 1;
   if (won) {
-    const rate = boardValue / Math.max(1, seconds);
+    const winRate = rate(boardValue, seconds);
     entry.won += 1;
     entry.streak += 1;
     entry.bestStreak = Math.max(entry.bestStreak, entry.streak);
     entry.totalWinSeconds += seconds;
     entry.bestTime = entry.bestTime === null ? seconds : Math.min(entry.bestTime, seconds);
-    entry.bestRate = entry.bestRate === null ? rate : Math.max(entry.bestRate, rate);
+    entry.bestRate = entry.bestRate === null ? winRate : Math.max(entry.bestRate, winRate);
   } else {
     entry.streak = 0;
   }
@@ -92,4 +96,33 @@ export function sanitizeStats(raw) {
     };
   }
   return clean;
+}
+
+// Custom boards come in any size, so one best time for all of them means nothing:
+// they keep stats but no best time.
+export function tracksBestTime(statsKey) {
+  return statsKey !== "custom";
+}
+
+// The best-time key of a saved game row, or null when its mode keeps none.
+function bestKeyOf({ mode, date_key }) {
+  if (!tracksBestTime(mode)) return null;
+  return mode === "daily" ? `daily:${date_key}` : mode;
+}
+
+// Rows are saved games (the `games` table shape), oldest first. Assisted games never count.
+export function statsFromGames(rows) {
+  return rows.reduce(
+    (stats, row) => (row.assisted ? stats : recordResult(stats, row.mode, { won: row.won, seconds: row.seconds, boardValue: row.three_bv })),
+    {},
+  );
+}
+
+export function bestTimesFromGames(rows) {
+  const times = {};
+  for (const row of rows) {
+    const key = bestKeyOf(row);
+    if (row.won && !row.assisted && key !== null && !(times[key] <= row.seconds)) times[key] = row.seconds;
+  }
+  return times;
 }

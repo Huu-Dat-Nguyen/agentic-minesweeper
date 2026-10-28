@@ -8,7 +8,8 @@
     <title>How Minefield was built</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="build.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/build.css">
   </head>
   <body>
     <header class="site-header">
@@ -22,8 +23,8 @@
         <h1>How Minefield <em>was built</em></h1>
         <p class="lead">A person wrote short prompts. AI coding agents planned the work, wrote the code, tested it, and kept these notes. Each step below shows what was asked, what changed, and the commit that shipped it.</p>
         <dl class="totals">
-          <div><dt>Prompts</dt><dd>8</dd></div>
-          <div><dt>Commits</dt><dd>5+</dd></div>
+          <div><dt>Prompts</dt><dd>19</dd></div>
+          <div><dt>Commits</dt><dd>20</dd></div>
           <div><dt>Dependencies</dt><dd>0</dd></div>
           <div><dt>Build steps</dt><dd>0</dd></div>
         </dl>
@@ -143,7 +144,7 @@
         </li>
 
         <li class="step">
-          <details open>
+          <details>
             <summary>
               <span class="step-date">Oct 12</span>
               <span class="step-title">Ten ideas, one at a time</span>
@@ -157,7 +158,179 @@
             </div>
           </details>
         </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">Plan v2: rewrite by the rules, then add accounts</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Rewrite the code following my coding rules and compare what improved, add a database login to track players, and report it here. Split the work into one-hour steps with a checklist.</p>
+              <p><span class="label">Result</span> An eleven-step plan. Before any code changed, the agent saved a baseline: the output of 20 seeded boards, 3 daily boards and 8 share links, so the rewrite can prove old links still build the same boards; size and speed numbers to compare against; and screenshots of every screen. This page moved onto a stylesheet shared with the game.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 1: one home for board geometry</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Start the rewrite with the grid and the game engine.</p>
+              <p><span class="label">Result</span> A new <code>core/grid.mjs</code> now holds the row and column math, neighbor lists, size checks and position labels that v1 repeated in about 15 places. The new engine works on square numbers instead of row and column pairs, keeps a running count of safe squares instead of rescanning the board after every reveal, and reuses one neighbor table per board size. To prove nothing changed, the old and new engines played about 3,000 random games side by side and produced identical boards every time; seeded boards still match v1 exactly.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 2: solver, seeds, stats, and games as move lists</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Continue with the solver, seeds, stats, and moves.</p>
+              <p><span class="label">Result</span> The solver, seeds and stats moved onto the new engine. Hint explanations now come from one table instead of a long switch, and every "row, column" label comes from one function instead of three. The AI no longer works out the same position twice before a guess. A new <code>core/moves.mjs</code> treats a game as its seed plus a list of moves, and the same code plays a move and replays a saved game, which is what will let accounts store replays later. Checked against v1 on 19,340 random positions: every deduction, hint, explanation and AI move matched. Board generation speed is unchanged (about 28 ms for a no-guess Expert board on this laptop), so this step is about clarity, not speed.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 3: game modes and a board that redraws only what changed</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Continue with game modes, board drawing, and a new app that can play.</p>
+              <p><span class="label">Result</span> Normal, daily and shared games are now three small objects with the same parts (best-time key, stats key, link, label, restart) instead of about ten scattered "which kind of game is this?" checks. The board keeps its square buttons and repaints only the squares a move changed, where v1 rebuilt every button on every move, AI step and replay frame. The page script went from 1,102 lines to 279 for basic play; hints, the AI, sharing, replay, stats and settings come back in the next steps.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 4: keyboard, hints, the AI, daily and sharing</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Continue with input and the tools row.</p>
+              <p><span class="label">Result</span> Keyboard and mouse handling moved into its own module, with the "can this square be chorded?" check in one place instead of three. The AI player no longer changes the game itself: each of its moves goes through the same path as a player's move, so it is recorded and timed the same way. Share texts now live with each game kind, and one <code>interrupt()</code> call replaces four copies of "stop the AI, stop the replay, clear the hint". Settings are read through a small store that keeps only known, valid values.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 5: replay, stats, settings and sound</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Continue with replay, the dialogs, sound, and stored stats.</p>
+              <p><span class="label">Result</span> Replay now rebuilds a finished game from its saved move list instead of keeping a second copy of every board in memory, so the same data can later be stored with an account. All saved data (settings, stats, best times) goes through one store that is the only code touching browser storage, and it now checks best times when loading them, which v1 did not. Players keep their existing stats and best times: the storage keys and formats are unchanged. Every v1 feature is back on the new modules.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 6: shared styles, offline, and the old code removed</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Continue with the stylesheets, offline support, and removing the old files.</p>
+              <p><span class="label">Result</span> The game's stylesheet now sits on the same base as this page, with duplicate button and panel rules merged and repeated colors turned into named values. Screenshots of every screen on desktop and phone were compared pixel by pixel with the v1 originals: the game looks exactly the same. The offline file list is now checked by a test, so it can no longer drift from the real files; it also caches the two images this page uses, and offline play was confirmed in Chrome with the network switched off. The five v1 files nothing used anymore were removed after the author approved it.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 26</span>
+              <span class="step-title">v2 step 7: check everything and measure the result</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Check the rewrite end to end and write the comparison.</p>
+              <p><span class="label">Result</span> A separate agent re-read all the new code against the rules without seeing the plan, item by item against the v1 audit. It found six bugs (two inherited from v1) and some leftover duplication; all were fixed and covered by tests. The same daily board opened identically on the live v1 site and the new code, phone layout and offline play were checked, and the before-and-after numbers are summarized below.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 28</span>
+              <span class="step-title">Accounts step 1: a database that only lets players see their own games</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Turn off best times for custom boards, then set up the database for accounts.</p>
+              <p><span class="label">Result</span> Custom boards come in any size, so they now count in stats but keep no best time. For accounts, the agent wrote the database tables and their access rules: a player can read and save only their own games, saved games can't be edited, and other people only ever see usernames and leaderboard times. The key in the page's code is public by design; the access rules are what protect the data. Stats and best times are worked out from the saved games rather than stored twice, using the same rules as the offline game. A game that fails to save waits in the browser, tagged with its player so a shared computer can't mix accounts, and is sent again later. No new dependencies: the connector uses the browser's own <code>fetch</code>.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details>
+            <summary>
+              <span class="step-date">Oct 28</span>
+              <span class="step-title">Accounts step 2: sign in and keep your games</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Add sign-up, sign-in and per-player stats.</p>
+              <p><span class="label">Result</span> A Sign in button in the header opens an account dialog that checks the form before sending anything. Signed out, the game works exactly as before and keeps everything in the browser; signed in, finished games and stats go to the player's account, and if the account can't be reached the game says so and keeps saving locally. The author created the first real account and won a game: it reached the database, stats and the best time loaded from it, and it appeared on the leaderboard. Checked with that account, the database returned only the player's own games and refused a game saved under someone else's name. The agent never saw the password: it was typed by the author, and the checks read only non-secret fields.</p>
+            </div>
+          </details>
+        </li>
+
+        <li class="step">
+          <details open>
+            <summary>
+              <span class="step-date">Oct 28</span>
+              <span class="step-title">Accounts step 3: leaderboard and game history</span>
+            </summary>
+            <div class="step-body">
+              <p class="prompt"><span>Prompt</span> Add the leaderboard and game history, then finish the docs.</p>
+              <p><span class="label">Result</span> A Leaders button shows the fastest players for Beginner, Intermediate, Expert and today's daily board, with your own row highlighted. Signed in, the account dialog lists your recent games, and any of them can be replayed move by move, rebuilt from its saved seed and moves. Checked with the author's account: the saved 29-second win replayed to the same finished board and the leaderboard showed it. While checking, the agent found that a browser could load one old file next to new ones right after an update; the offline helper now asks the server whether each file is current, and offline play was re-checked in Chrome.</p>
+            </div>
+          </details>
+        </li>
       </ol>
+
+      <section class="how" id="v2">
+        <h2>v2: rewritten with coding rules</h2>
+        <p class="section-lead">The whole game was rewritten to follow <a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/blob/main/docs/coding-rules.md">the author's coding rules</a>: no duplicated logic, check every hidden link between modules, keep code lean. Every number below was measured against the v1 baseline; the full comparison is in <a href="https://github.com/Huu-Dat-Nguyen/agentic-minesweeper/blob/main/report/rewrite-comparison.md">the report</a>.</p>
+        <dl class="totals">
+          <div><dt>Largest file</dt><dd>1102→398</dd></div>
+          <div><dt>Ms per move</dt><dd>7.7→1.3</dd></div>
+          <div><dt>Tests</dt><dd>30→96</dd></div>
+          <div><dt>Boards changed</dt><dd>0</dd></div>
+        </dl>
+        <ul>
+          <li><strong>Better:</strong> logic that v1 repeated in several places (board math, labels, size checks, 3BV/s, links, stop-everything steps) now lives in one place each; the 1,102-line page script became 17 small modules; a move on an Expert board repaints 2 squares instead of rebuilding all 480.</li>
+          <li><strong>The same:</strong> every seeded, daily and shared board matches v1 exactly, the game is pixel-identical on desktop and phone, and players keep their stats.</li>
+          <li><strong>Not better:</strong> the app code grew 14% (1,841 → 2,107 lines), mostly module wiring and new behavior such as saved move lists; board generation speed is unchanged.</li>
+          <li><strong>Changed on purpose:</strong> custom boards come in any size, so one best time for all of them meant nothing. They still count in stats but no longer keep a best time.</li>
+          <li><strong>Bugs found:</strong> an independent audit of the new code found two v1 bugs (the AI could loop forever, resetting stats could throw) and four new ones, all fixed with tests.</li>
+        </ul>
+      </section>
+
+      <section class="how" id="accounts">
+        <h2>Accounts and leaderboard</h2>
+        <p class="section-lead">Players can now sign in to keep their games, stats and replays across devices and appear on a public leaderboard. The site still has no server of its own and no dependencies: it talks to a Supabase database with the browser's own <code>fetch</code>.</p>
+        <ul>
+          <li><strong>Private by default.</strong> Database rules let a player read and save only their own games, and saved games can't be edited. Other people only see usernames and leaderboard times. The key in the page is public by design; the rules are what protect the data, and they were tested live: reads returned only the player's own games, and a game saved under someone else's name was refused.</li>
+          <li><strong>One set of rules.</strong> Stats and best times are worked out from the saved games with the same code the offline game uses, so the two can't disagree.</li>
+          <li><strong>Still works offline.</strong> Signed out, everything stays in the browser as before. Signed in, a game that can't be saved waits in the browser, tagged with its player, and is sent when the connection returns.</li>
+          <li><strong>Known limit.</strong> Times are sent by players' browsers, so a determined cheater could fake one. Custom boards have no best time and are not on the leaderboard.</li>
+        </ul>
+      </section>
 
       <section class="how">
         <h2>How the work was done</h2>

@@ -1,27 +1,49 @@
 // Offline support: serve fresh files when online and fall back to the cache
 // when offline. Bump CACHE_NAME when the file list changes.
-const CACHE_NAME = "minefield-v1";
+const CACHE_NAME = "minefield-v7";
+// Every file the site needs offline. tests/sw.test.mjs checks this list against the disk.
 const APP_FILES = [
   "./",
   "index.html",
   "build.html",
-  "build.css",
-  "styles.css",
+  "css/base.css",
+  "css/build.css",
+  "css/game.css",
   "app.mjs",
-  "game-engine.mjs",
-  "solver.mjs",
-  "seed.mjs",
-  "stats.mjs",
+  "modes.mjs",
+  "config.mjs",
+  "core/engine.mjs",
+  "core/grid.mjs",
+  "core/moves.mjs",
+  "core/seed.mjs",
+  "core/solver.mjs",
+  "core/stats.mjs",
+  "ui/account.mjs",
+  "ui/agent.mjs",
+  "ui/board.mjs",
+  "ui/clock.mjs",
+  "ui/dialogs.mjs",
+  "ui/history.mjs",
+  "ui/input.mjs",
+  "ui/leaderboard.mjs",
+  "ui/replay.mjs",
+  "ui/sound.mjs",
+  "data/cloud.mjs",
+  "data/store.mjs",
+  "data/supabase.mjs",
   "manifest.webmanifest",
   "icons/icon.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",
+  "minefield-preview.png",
+  "docs/images/minefield-early-build.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_FILES))
+      // reload: take the offline copy from the server, never from a stale HTTP cache.
+      .then((cache) => cache.addAll(APP_FILES.map((file) => new Request(file, { cache: "reload" }))))
       .then(() => self.skipWaiting()),
   );
 });
@@ -38,8 +60,10 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
 
+  // no-cache: revalidate with the server each time, so a new release can't load next
+  // to stale files the browser cached from the old one (modules must match).
   event.respondWith(
-    fetch(request)
+    fetch(request, { cache: "no-cache" })
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
