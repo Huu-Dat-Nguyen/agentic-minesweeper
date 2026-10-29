@@ -22,7 +22,7 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 | `data/store.mjs` | `LocalStore`: the only code touching `localStorage` (see the data map below). |
 | `config.mjs` | Supabase URL and publishable key (public by design; RLS protects the data). Never add a secret or service_role key. |
 | `data/supabase.mjs` | `createSupabase`: Adapter over Supabase Auth and REST with plain fetch (sign-up/in/out, token refresh, profile, games, `top_times`). Throws readable errors. |
-| `data/cloud.mjs` | `CloudStore`: same interface as `LocalStore`, with stats and best times derived from the player's saved games; failed saves wait in the outbox. Not wired into `app.mjs` until S9. |
+| `data/cloud.mjs` | `CloudStore`: same interface as `LocalStore`, with stats and best times derived from the player's saved games; failed saves wait in the outbox, tagged with their player. |
 | `supabase/schema.sql` | Tables `profiles` and `games`, RLS, profile trigger, `top_times` function. Run once in the Supabase SQL Editor. |
 | `app.mjs` | Wiring only: session, one `play()` path for every move, one `interrupt()` facade. |
 | `tests/` | `node:test` suites for every module; `sw.test.mjs` keeps the offline file list complete. |
@@ -31,7 +31,7 @@ Minefield is a Minesweeper website in plain HTML, CSS, and JavaScript with no de
 | `build.html`, `css/build.css` | Public "How it was built" timeline page. Updated at the end of every v2 step. |
 | `css/base.css` | Shared colors, reset, header, focus and reduced motion for every page. |
 | `docs/coding-rules.md` | Snapshot of the author's coding rules that v2 follows. |
-| `report/` | v2 comparison: `baseline-audit.md`, `*-metrics.json` (from `measure.mjs`), `shots.mjs` (headless screenshots), `pixel-diff.py` (compare screenshot sets), later `rewrite-comparison.md`. |
+| `report/` | v2 comparison: `baseline-audit.md`, `*-metrics.json` (from `measure.mjs`), `shots.mjs` (headless screenshots), `pixel-diff.py` (compare screenshot sets), `rewrite-comparison.md` (the v1 vs v2 result). |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and app install. Same-origin GETs only; bump `CACHE_NAME` when the list changes (`tests/sw.test.mjs` checks the list). |
 | `README.md` | Public write-up: prompt/result table, features, local play, deployment. |
 | `minefield-preview.png`, `docs/images/` | Public README and build-page images. |

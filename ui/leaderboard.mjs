@@ -1,12 +1,6 @@
 // The Leaders dialog: fastest unassisted wins per mode, read from the public top_times call.
-import { DIFFICULTIES } from "../core/engine.mjs";
 import { dateKey } from "../core/seed.mjs";
 import { rate } from "../core/stats.mjs";
-
-export const LEADER_TABS = [
-  ...Object.entries(DIFFICULTIES).map(([key, { label }]) => [key, label]),
-  ["daily", "Daily"],
-];
 
 // Table rows for the entries topTimes returns (best first). `ownName` marks the signed-in player's row.
 export function leaderRows(entries, ownName) {
